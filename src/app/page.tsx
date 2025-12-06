@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { SubmissionForm } from '@/components/SubmissionForm';
-import { EvaluationStatus } from '@/components/EvaluationStatus';
+import { EvaluationStatus, TestProgress } from '@/components/EvaluationStatus';
 import { EvaluationReport } from '@/components/EvaluationReport';
 
 interface Evaluation {
@@ -11,7 +11,8 @@ interface Evaluation {
   reportUrl?: string;
   report?: EvaluationReportData;
   error?: string;
-  pollAttempts?: number;
+  progress?: TestProgress;
+  startTime?: string;
 }
 
 export interface EvaluationReportData {
@@ -26,6 +27,8 @@ export interface EvaluationReportData {
     codeQuality: number;
     documentation: number;
     functional: number;
+    uxDesign: number;
+    aiReview: number;
     overall: number;
   };
   tier: 'STRONG_HIRE' | 'MAYBE' | 'NO_HIRE';
@@ -81,7 +84,7 @@ export default function Home() {
         evaluationId: data.evaluationId,
         status: 'PROCESSING',
         reportUrl: data.reportUrl,
-        pollAttempts: 0,
+        startTime: new Date().toISOString(),
       });
 
       // Start polling for status
@@ -115,8 +118,12 @@ export default function Home() {
         const data = await response.json();
         consecutiveErrors = 0; // Reset on success
 
-        // Update poll attempts for UI
-        setEvaluation(prev => prev ? { ...prev, pollAttempts: attempts } : null);
+        // Update progress from API
+        setEvaluation(prev => prev ? {
+          ...prev,
+          progress: data.progress,
+          startTime: data.startTime || prev.startTime,
+        } : null);
 
         if (data.status === 'COMPLETED' && data.report) {
           console.log('Evaluation completed');
@@ -211,7 +218,8 @@ export default function Home() {
         ) : evaluation.status === 'PROCESSING' ? (
           <EvaluationStatus
             evaluationId={evaluation.evaluationId}
-            pollAttempts={evaluation.pollAttempts}
+            progress={evaluation.progress}
+            startTime={evaluation.startTime}
           />
         ) : evaluation.status === 'COMPLETED' && evaluation.report ? (
           <EvaluationReport report={evaluation.report} onReset={handleReset} />
