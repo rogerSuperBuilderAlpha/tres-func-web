@@ -2,9 +2,14 @@
 
 interface EvaluationStatusProps {
   evaluationId: string;
+  pollAttempts?: number;
 }
 
-export function EvaluationStatus({ evaluationId }: EvaluationStatusProps) {
+export function EvaluationStatus({ evaluationId, pollAttempts = 0 }: EvaluationStatusProps) {
+  const elapsedSeconds = pollAttempts * 5;
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+  const remainingSeconds = elapsedSeconds % 60;
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-8 text-center">
       <div className="mb-6">
@@ -27,19 +32,29 @@ export function EvaluationStatus({ evaluationId }: EvaluationStatusProps) {
         <p className="font-mono text-gray-800">{evaluationId}</p>
       </div>
 
+      {pollAttempts > 0 && (
+        <div className="mb-6 text-sm text-gray-500">
+          Elapsed time: {elapsedMinutes > 0 ? `${elapsedMinutes}m ` : ''}{remainingSeconds}s
+        </div>
+      )}
+
       <div className="space-y-3 text-left max-w-sm mx-auto">
-        <StatusItem label="Repository Analysis" status="running" />
-        <StatusItem label="Security Testing" status="pending" />
-        <StatusItem label="Image Edge Cases" status="pending" />
-        <StatusItem label="Form Validation" status="pending" />
-        <StatusItem label="Resilience Testing" status="pending" />
-        <StatusItem label="Functional Verification" status="pending" />
-        <StatusItem label="Report Generation" status="pending" />
+        <StatusItem label="Repository Analysis" status={pollAttempts >= 1 ? 'running' : 'pending'} />
+        <StatusItem label="Security Testing" status={pollAttempts >= 2 ? 'running' : 'pending'} />
+        <StatusItem label="Image Edge Cases" status={pollAttempts >= 3 ? 'running' : 'pending'} />
+        <StatusItem label="Form Validation" status={pollAttempts >= 4 ? 'running' : 'pending'} />
+        <StatusItem label="Resilience Testing" status={pollAttempts >= 5 ? 'running' : 'pending'} />
+        <StatusItem label="Functional Verification" status={pollAttempts >= 6 ? 'running' : 'pending'} />
+        <StatusItem label="Report Generation" status={pollAttempts >= 7 ? 'running' : 'pending'} />
       </div>
 
       <p className="mt-6 text-sm text-gray-500">
         This typically takes 2-5 minutes. Please wait...
       </p>
+
+      <div className="mt-4 text-xs text-gray-400">
+        Status check #{pollAttempts} of 60
+      </div>
     </div>
   );
 }
