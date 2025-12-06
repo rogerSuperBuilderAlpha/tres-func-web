@@ -5,6 +5,15 @@ import { SubmissionForm } from '@/components/SubmissionForm';
 import { EvaluationStatus, TestProgress } from '@/components/EvaluationStatus';
 import { EvaluationReport } from '@/components/EvaluationReport';
 
+interface DetailedProgress {
+  testName: string;
+  stage: string;
+  message: string;
+  details?: string;
+  percentage?: number;
+  timestamp: number;
+}
+
 interface Evaluation {
   evaluationId: string;
   status: 'PROCESSING' | 'COMPLETED' | 'FAILED';
@@ -13,6 +22,38 @@ interface Evaluation {
   error?: string;
   progress?: TestProgress;
   startTime?: string;
+  detailedProgress?: DetailedProgress[];
+}
+
+interface AiTestAnalysis {
+  testRanSuccessfully: boolean;
+  failureAttribution: 'app' | 'test_infrastructure' | 'unclear' | 'none';
+  explanation: string;
+  scoreAdjustment: number;
+  keyFindings: string[];
+  shouldCountInScore: boolean;
+}
+
+export interface RubricScores {
+  coreFunctionality: number;
+  codeQuality: number;
+  security: number;
+  errorHandling: number;
+  imageProcessing: number;
+  formValidation: number;
+  uxAccessibility: number;
+  deploymentCompliance: number;
+  loadPerformance: number;
+  overall: number;
+}
+
+export interface AiExecutiveSummary {
+  overallAssessment: string;
+  hiringRecommendation: string;
+  keyStrengths: string[];
+  keyWeaknesses: string[];
+  fairnessConsiderations: string[];
+  scoreBreakdown?: string;
 }
 
 export interface EvaluationReportData {
@@ -30,6 +71,7 @@ export interface EvaluationReportData {
     uxDesign: number;
     aiReview: number;
     overall: number;
+    rubric?: RubricScores;
   };
   tier: 'STRONG_HIRE' | 'MAYBE' | 'NO_HIRE';
   tierReason: string;
@@ -39,6 +81,7 @@ export interface EvaluationReportData {
     concerns: string[];
     recommendations: string[];
   };
+  aiExecutiveSummary?: AiExecutiveSummary;
   suites?: {
     repoAnalysis?: {
       cloneSuccess: boolean;
@@ -48,27 +91,47 @@ export interface EvaluationReportData {
       separatesFrontendBackend?: boolean;
       readmeExists?: boolean;
       readmeHasSetupInstructions?: boolean;
+      aiAnalysis?: AiTestAnalysis;
     };
     security?: {
       xss?: { brandNameFieldVulnerable?: boolean; productTypeFieldVulnerable?: boolean };
       injection?: { sqlInjectionPayloadsAccepted?: boolean };
       disclosure?: { apiKeysInClientCode?: boolean };
+      aiAnalysis?: AiTestAnalysis;
     };
     functional?: {
       scenarioA_Match?: { passed?: boolean };
       scenarioB_BrandMismatch?: { passed?: boolean };
       scenarioC_AbvMismatch?: { passed?: boolean };
+      aiAnalysis?: AiTestAnalysis;
+    };
+    imageEdgeCases?: {
+      aiAnalysis?: AiTestAnalysis;
+    };
+    formInput?: {
+      aiAnalysis?: AiTestAnalysis;
+    };
+    resilience?: {
+      aiAnalysis?: AiTestAnalysis;
     };
     uxTest?: {
       pageLoads?: boolean;
       loadTimeMs?: number;
       findings?: string[];
       uxScore?: number;
+      aiAnalysis?: AiTestAnalysis;
     };
     aiReview?: {
       overallAssessment?: string;
       codeQualityRating?: string;
       hiringSignal?: string;
+    };
+    deployment?: {
+      urlAccessible?: boolean;
+      formRendersCorrectly?: boolean;
+      appStartsWithoutModification?: boolean;
+      findings?: string[];
+      aiAnalysis?: AiTestAnalysis;
     };
   };
 }
@@ -149,6 +212,7 @@ export default function Home() {
           ...prev,
           progress: data.progress,
           startTime: data.startTime || prev.startTime,
+          detailedProgress: data.detailedProgress,
         } : null);
 
         if (data.status === 'COMPLETED' && data.report) {
@@ -263,6 +327,7 @@ export default function Home() {
               evaluationId={evaluation.evaluationId}
               progress={evaluation.progress}
               startTime={evaluation.startTime}
+              detailedProgress={evaluation.detailedProgress}
             />
           </div>
         ) : evaluation.status === 'COMPLETED' && evaluation.report ? (
