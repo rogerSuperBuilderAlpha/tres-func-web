@@ -7,11 +7,11 @@ interface EvaluationReportProps {
   onReset: () => void;
 }
 
-export function EvaluationReport({ report, onReset }: EvaluationReportProps) {
+export function EvaluationReport({ report }: EvaluationReportProps) {
   const tierColors = {
-    STRONG_HIRE: 'bg-green-100 text-green-800 border-green-300',
-    MAYBE: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    NO_HIRE: 'bg-red-100 text-red-800 border-red-300',
+    STRONG_HIRE: 'bg-green-500 text-white',
+    MAYBE: 'bg-yellow-500 text-white',
+    NO_HIRE: 'bg-red-500 text-white',
   };
 
   const tierLabels = {
@@ -26,165 +26,239 @@ export function EvaluationReport({ report, onReset }: EvaluationReportProps) {
     return 'text-red-600';
   };
 
-  const getScoreBarColor = (score: number) => {
+  const getScoreBg = (score: number) => {
     if (score >= 80) return 'bg-green-500';
     if (score >= 60) return 'bg-yellow-500';
     return 'bg-red-500';
   };
 
+  const scoreLabels: Record<string, string> = {
+    security: 'Security',
+    errorHandling: 'Error Handling',
+    edgeCases: 'Edge Cases',
+    codeQuality: 'Code Quality',
+    documentation: 'Documentation',
+    functional: 'Functional',
+    uxDesign: 'UX Design',
+    aiReview: 'AI Review',
+  };
+
+  // Get explanation for each score from suites data
+  const getScoreExplanation = (key: string): string => {
+    const suites = report.suites as Record<string, unknown> | undefined;
+    if (!suites) return 'Analysis data not available';
+
+    switch (key) {
+      case 'security':
+        const sec = suites.security as Record<string, unknown> | undefined;
+        if (!sec) return 'Security tests completed';
+        const issues: string[] = [];
+        if ((sec.xss as Record<string, boolean>)?.brandNameFieldVulnerable) issues.push('XSS vulnerability in brand field');
+        if ((sec.injection as Record<string, boolean>)?.sqlInjectionPayloadsAccepted) issues.push('SQL injection possible');
+        if ((sec.disclosure as Record<string, boolean>)?.apiKeysInClientCode) issues.push('API keys exposed');
+        return issues.length > 0 ? issues.join('. ') : 'No major security vulnerabilities detected';
+
+      case 'functional':
+        const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
+        if (!func) return 'Functional tests completed';
+        const passed = [
+          func.scenarioA_Match?.passed,
+          func.scenarioB_BrandMismatch?.passed,
+          func.scenarioC_AbvMismatch?.passed,
+        ].filter(Boolean).length;
+        return `${passed}/3 core verification scenarios passed`;
+
+      case 'uxDesign':
+        const ux = suites.uxTest as Record<string, unknown> | undefined;
+        if (!ux) return 'UX testing completed';
+        const findings = (ux.findings as string[]) || [];
+        return findings.length > 0 ? findings.slice(0, 2).join('. ') : 'Page loads correctly with good UX';
+
+      case 'aiReview':
+        const ai = suites.aiReview as Record<string, unknown> | undefined;
+        if (!ai) return 'AI review completed';
+        return (ai.overallAssessment as string) || 'Code analysis completed';
+
+      case 'codeQuality':
+        const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
+        if (!repo) return 'Repository analysis completed';
+        const quality: string[] = [];
+        if (repo.hasTests) quality.push('Has tests');
+        if (repo.hasSourceDirectory) quality.push('Organized structure');
+        if (repo.separatesFrontendBackend) quality.push('Separated frontend/backend');
+        return quality.length > 0 ? quality.join(', ') : 'Basic code structure';
+
+      case 'documentation':
+        const docs = suites.repoAnalysis as Record<string, unknown> | undefined;
+        if (!docs) return 'Documentation check completed';
+        if (!docs.readmeExists) return 'No README file found';
+        if (!docs.readmeHasSetupInstructions) return 'README lacks setup instructions';
+        return 'README with setup instructions found';
+
+      case 'errorHandling':
+        return 'Tested error responses for edge cases and invalid inputs';
+
+      case 'edgeCases':
+        return 'Tested image formats, sizes, and unusual inputs';
+
+      default:
+        return 'Analysis completed';
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header with Tier */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Evaluation Results</h2>
-            <p className="text-gray-500 text-sm">
-              Completed {new Date(report.evaluatedAt).toLocaleString()}
-            </p>
+    <div className="h-full flex">
+      {/* Left Column - Summary */}
+      <div className="w-1/3 border-r bg-white flex flex-col">
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Tier Badge */}
+          <div className="text-center mb-6">
+            <div className={`inline-block px-6 py-3 rounded-lg ${tierColors[report.tier]}`}>
+              <span className="text-2xl font-bold">{tierLabels[report.tier]}</span>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">{report.tierReason}</p>
           </div>
-          <div className={`px-6 py-3 rounded-lg border-2 ${tierColors[report.tier]}`}>
-            <span className="text-lg font-bold">{tierLabels[report.tier]}</span>
-          </div>
-        </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <p className="text-gray-700">{report.tierReason}</p>
-        </div>
-
-        {/* Overall Score */}
-        <div className="text-center mb-6">
-          <div className={`text-6xl font-bold ${getScoreColor(report.scores.overall)}`}>
-            {report.scores.overall}
+          {/* Overall Score */}
+          <div className="text-center mb-6 pb-6 border-b">
+            <div className={`text-6xl font-bold ${getScoreColor(report.scores.overall)}`}>
+              {report.scores.overall}
+            </div>
+            <p className="text-gray-500">Overall Score</p>
           </div>
-          <p className="text-gray-500">Overall Score</p>
-        </div>
 
-        {/* Links */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-gray-500 mb-1">Repository</p>
-            <a
-              href={report.repoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline truncate block"
-            >
-              {report.repoUrl}
-            </a>
+          {/* Links */}
+          <div className="space-y-3 mb-6 pb-6 border-b">
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Repository</p>
+              <a
+                href={report.repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline text-sm truncate block"
+              >
+                {report.repoUrl.replace('https://github.com/', '')}
+              </a>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Deployed App</p>
+              <a
+                href={report.deployedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline text-sm truncate block"
+              >
+                {report.deployedUrl.replace('https://', '')}
+              </a>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Evaluated</p>
+              <p className="text-sm text-gray-700">
+                {new Date(report.evaluatedAt).toLocaleString()}
+              </p>
+            </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-gray-500 mb-1">Deployed App</p>
-            <a
-              href={report.deployedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline truncate block"
-            >
-              {report.deployedUrl}
-            </a>
+
+          {/* Critical Failures */}
+          {report.criticalFailures.length > 0 && (
+            <div className="mb-6 pb-6 border-b">
+              <h3 className="text-sm font-semibold text-red-800 mb-2 uppercase tracking-wide">
+                Critical Failures
+              </h3>
+              <ul className="space-y-1">
+                {report.criticalFailures.map((failure, i) => (
+                  <li key={i} className="text-sm text-red-700 flex items-start">
+                    <span className="mr-2">•</span>
+                    {failure}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Quick Summary */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-green-800 mb-2 uppercase tracking-wide">
+                Strengths ({report.summary.strengths.length})
+              </h3>
+              <ul className="space-y-1">
+                {report.summary.strengths.slice(0, 4).map((item, i) => (
+                  <li key={i} className="text-sm text-gray-600 flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-yellow-800 mb-2 uppercase tracking-wide">
+                Concerns ({report.summary.concerns.length})
+              </h3>
+              <ul className="space-y-1">
+                {report.summary.concerns.slice(0, 4).map((item, i) => (
+                  <li key={i} className="text-sm text-gray-600 flex items-start">
+                    <span className="text-yellow-500 mr-2">!</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Critical Failures */}
-      {report.criticalFailures.length > 0 && (
-        <div className="bg-red-50 rounded-xl shadow-lg p-6 border border-red-200">
-          <h3 className="text-lg font-semibold text-red-800 mb-3">Critical Failures</h3>
-          <ul className="space-y-2">
-            {report.criticalFailures.map((failure, i) => (
-              <li key={i} className="flex items-start text-red-700">
-                <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                {failure}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Right Column - Score Details */}
+      <div className="flex-1 flex flex-col bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Score Breakdown</h2>
 
-      {/* Scores Breakdown */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Score Breakdown</h3>
-        <div className="space-y-4">
-          {Object.entries(report.scores)
-            .filter(([key]) => key !== 'overall')
-            .map(([key, value]) => (
-              <div key={key}>
-                <div className="flex justify-between mb-1">
-                  <span className="text-gray-700 capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                  <span className={`font-medium ${getScoreColor(value)}`}>{value}</span>
+          <div className="grid grid-cols-2 gap-4">
+            {Object.entries(report.scores)
+              .filter(([key]) => key !== 'overall')
+              .map(([key, value]) => (
+                <div key={key} className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-800">
+                      {scoreLabels[key] || key}
+                    </span>
+                    <span className={`text-2xl font-bold ${getScoreColor(value)}`}>
+                      {value}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full mb-3">
+                    <div
+                      className={`h-full rounded-full ${getScoreBg(value)}`}
+                      style={{ width: `${value}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    {getScoreExplanation(key)}
+                  </p>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${getScoreBarColor(value)} transition-all duration-500`}
-                    style={{ width: `${value}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
+              ))}
+          </div>
 
-      {/* Summary */}
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Strengths */}
-        <div className="bg-green-50 rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-green-800 mb-3">Strengths</h3>
-          <ul className="space-y-2">
-            {report.summary.strengths.map((item, i) => (
-              <li key={i} className="flex items-start text-green-700 text-sm">
-                <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                {item}
-              </li>
-            ))}
-          </ul>
+          {/* Recommendations */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Recommendations</h3>
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <ul className="space-y-2">
+                {report.summary.recommendations.map((item, i) => (
+                  <li key={i} className="text-sm text-gray-700 flex items-start">
+                    <span className="text-blue-500 mr-2 mt-0.5">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
-
-        {/* Concerns */}
-        <div className="bg-yellow-50 rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-3">Concerns</h3>
-          <ul className="space-y-2">
-            {report.summary.concerns.map((item, i) => (
-              <li key={i} className="flex items-start text-yellow-700 text-sm">
-                <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Recommendations */}
-        <div className="bg-blue-50 rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-3">Recommendations</h3>
-          <ul className="space-y-2">
-            {report.summary.recommendations.map((item, i) => (
-              <li key={i} className="flex items-start text-blue-700 text-sm">
-                <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex justify-center space-x-4">
-        <button
-          onClick={onReset}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-        >
-          Evaluate Another Submission
-        </button>
       </div>
     </div>
   );

@@ -43,6 +43,32 @@ export interface EvaluationReportData {
     repoAnalysis?: {
       cloneSuccess: boolean;
       cloneError?: string;
+      hasTests?: boolean;
+      hasSourceDirectory?: boolean;
+      separatesFrontendBackend?: boolean;
+      readmeExists?: boolean;
+      readmeHasSetupInstructions?: boolean;
+    };
+    security?: {
+      xss?: { brandNameFieldVulnerable?: boolean; productTypeFieldVulnerable?: boolean };
+      injection?: { sqlInjectionPayloadsAccepted?: boolean };
+      disclosure?: { apiKeysInClientCode?: boolean };
+    };
+    functional?: {
+      scenarioA_Match?: { passed?: boolean };
+      scenarioB_BrandMismatch?: { passed?: boolean };
+      scenarioC_AbvMismatch?: { passed?: boolean };
+    };
+    uxTest?: {
+      pageLoads?: boolean;
+      loadTimeMs?: number;
+      findings?: string[];
+      uxScore?: number;
+    };
+    aiReview?: {
+      overallAssessment?: string;
+      codeQualityRating?: string;
+      hiringSignal?: string;
     };
   };
 }
@@ -180,47 +206,65 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            TTB Take-Home Evaluator
-          </h1>
-          <p className="text-gray-600">
-            Submit a candidate&apos;s repository and deployed app for automated evaluation
-          </p>
-        </header>
+    <main className="h-screen flex flex-col overflow-hidden bg-gray-50">
+      {/* Header - fixed height */}
+      <header className="flex-shrink-0 bg-white border-b px-6 py-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              TTB Take-Home Evaluator
+            </h1>
+            <p className="text-sm text-gray-500">
+              Automated candidate evaluation system
+            </p>
+          </div>
+          {evaluation && (
+            <button
+              onClick={handleReset}
+              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+            >
+              New Evaluation
+            </button>
+          )}
+        </div>
+      </header>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-start">
-              <svg className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {/* Error banner */}
+      {error && (
+        <div className="flex-shrink-0 bg-red-50 border-b border-red-200 px-6 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div>
-                <h3 className="text-red-800 font-medium">Error</h3>
-                <p className="text-red-700 mt-1">{error}</p>
-              </div>
+              <span className="text-red-700">{error}</span>
             </div>
             {evaluation?.status === 'FAILED' && (
               <button
                 onClick={handleReset}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition"
               >
                 Try Again
               </button>
             )}
           </div>
-        )}
+        </div>
+      )}
 
+      {/* Main content - fills remaining space */}
+      <div className="flex-1 overflow-hidden">
         {!evaluation ? (
-          <SubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+          <div className="h-full flex items-center justify-center p-6">
+            <SubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+          </div>
         ) : evaluation.status === 'PROCESSING' ? (
-          <EvaluationStatus
-            evaluationId={evaluation.evaluationId}
-            progress={evaluation.progress}
-            startTime={evaluation.startTime}
-          />
+          <div className="h-full flex items-center justify-center p-6">
+            <EvaluationStatus
+              evaluationId={evaluation.evaluationId}
+              progress={evaluation.progress}
+              startTime={evaluation.startTime}
+            />
+          </div>
         ) : evaluation.status === 'COMPLETED' && evaluation.report ? (
           <EvaluationReport report={evaluation.report} onReset={handleReset} />
         ) : null}
