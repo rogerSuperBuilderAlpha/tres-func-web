@@ -53,6 +53,129 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
     loadPerformance: { label: 'Load & Performance', max: 5 },
   };
 
+  // Map rubric categories to their data sources
+  const rubricToSuiteMap: Record<string, string[]> = {
+    coreFunctionality: ['functional'],
+    codeQuality: ['repoAnalysis', 'aiReview'],
+    security: ['security'],
+    errorHandling: ['formInput', 'resilience'],
+    imageProcessing: ['imageEdgeCases'],
+    formValidation: ['formInput'],
+    uxAccessibility: ['uxTest'],
+    deploymentCompliance: ['deployment'],
+    loadPerformance: ['uxTest', 'deployment'],
+  };
+
+  // Get AI assessment for rubric category
+  const getRubricAssessment = (rubricKey: string): string => {
+    const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
+    if (!suites) return 'Assessment data not available';
+
+    const suiteKeys = rubricToSuiteMap[rubricKey] || [];
+
+    // Collect AI analyses from relevant suites
+    for (const suiteKey of suiteKeys) {
+      const suite = suites[suiteKey];
+      if (!suite) continue;
+
+      const aiAnalysis = suite.aiAnalysis as {
+        explanation?: string;
+        keyFindings?: string[];
+      } | undefined;
+
+      if (aiAnalysis?.explanation) {
+        const findings = aiAnalysis.keyFindings?.slice(0, 2) || [];
+        return findings.length > 0
+          ? `${aiAnalysis.explanation} ${findings.join('. ')}`
+          : aiAnalysis.explanation;
+      }
+    }
+
+    // Fallback assessments based on rubric category
+    switch (rubricKey) {
+      case 'coreFunctionality': {
+        const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
+        if (!func) return 'Functional tests completed';
+        const scenarios = [
+          func.scenarioA_Match?.passed,
+          func.scenarioB_BrandMismatch?.passed,
+          func.scenarioC_AbvMismatch?.passed,
+        ];
+        const passed = scenarios.filter(Boolean).length;
+        if (passed === 3) return 'All core verification scenarios pass correctly';
+        if (passed === 0) return 'Core verification logic is not working - none of the test scenarios passed';
+        return `${passed}/3 verification scenarios passed - core logic needs improvement`;
+      }
+      case 'codeQuality': {
+        const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
+        const ai = suites.aiReview as Record<string, unknown> | undefined;
+        const parts: string[] = [];
+        if (repo?.hasTests) parts.push('Has test coverage');
+        if (repo?.separatesFrontendBackend) parts.push('Clean architecture');
+        if (ai?.codeQualityRating) parts.push(`AI rated: ${ai.codeQualityRating}`);
+        return parts.length > 0 ? parts.join('. ') : 'Code structure analysis completed';
+      }
+      case 'security': {
+        const sec = suites.security as Record<string, Record<string, boolean>> | undefined;
+        if (!sec) return 'Security assessment completed';
+        const issues: string[] = [];
+        if (sec.xss?.brandNameFieldVulnerable) issues.push('XSS vulnerability detected');
+        if (sec.injection?.sqlInjectionPayloadsAccepted) issues.push('SQL injection risk');
+        if (sec.disclosure?.apiKeysInClientCode) issues.push('API keys exposed in client code');
+        return issues.length > 0 ? issues.join('. ') : 'No critical security vulnerabilities found';
+      }
+      case 'errorHandling': {
+        const form = suites.formInput as Record<string, unknown> | undefined;
+        const res = suites.resilience as Record<string, unknown> | undefined;
+        const parts: string[] = [];
+        if (res?.recoversAfterError) parts.push('Recovers gracefully from errors');
+        if (res?.rapidSubmissions) parts.push('Handles rapid submissions');
+        return parts.length > 0 ? parts.join('. ') : 'Error handling tested';
+      }
+      case 'imageProcessing': {
+        const img = suites.imageEdgeCases as Record<string, unknown> | undefined;
+        if (!img) return 'Image processing tests completed';
+        return 'Image format handling and edge cases evaluated';
+      }
+      case 'formValidation': {
+        const form = suites.formInput as Record<string, unknown> | undefined;
+        if (!form) return 'Form validation tests completed';
+        return 'Form input validation and sanitization checked';
+      }
+      case 'uxAccessibility': {
+        const ux = suites.uxTest as Record<string, unknown> | undefined;
+        if (!ux) return 'UX evaluation completed';
+        const parts: string[] = [];
+        if (ux.isMobileResponsive) parts.push('Mobile responsive');
+        if (ux.hasProperHeadings) parts.push('Proper heading structure');
+        if (ux.formLabelsPresent) parts.push('Form labels present');
+        return parts.length > 0 ? parts.join('. ') : 'UX and accessibility evaluated';
+      }
+      case 'deploymentCompliance': {
+        const dep = suites.deployment as Record<string, unknown> | undefined;
+        if (!dep) return 'Deployment check completed';
+        const parts: string[] = [];
+        if (dep.urlAccessible) parts.push('URL accessible');
+        if (dep.formRendersCorrectly) parts.push('Form renders correctly');
+        if (dep.readmeHasSetupSteps) parts.push('README has setup instructions');
+        return parts.length > 0 ? parts.join('. ') : 'Deployment compliance verified';
+      }
+      case 'loadPerformance': {
+        const ux = suites.uxTest as Record<string, unknown> | undefined;
+        if (!ux) return 'Performance evaluation completed';
+        const loadTime = ux.loadTimeMs as number | undefined;
+        if (loadTime) {
+          if (loadTime < 2000) return `Fast load time (${(loadTime/1000).toFixed(1)}s)`;
+          if (loadTime < 4000) return `Acceptable load time (${(loadTime/1000).toFixed(1)}s)`;
+          return `Slow load time (${(loadTime/1000).toFixed(1)}s) - optimization needed`;
+        }
+        return 'Page load performance measured';
+      }
+      default:
+        return 'Assessment completed';
+    }
+  };
+
   // Legacy labels (100-point scale)
   const scoreLabels: Record<string, string> = {
     security: 'Security',
@@ -321,6 +444,8 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
                   const safeValue = Math.max(0, value || 0);
                   const maxScore = rubricInfo.max;
                   const percentage = Math.round((safeValue / maxScore) * 100);
+                  const gradeLabel = percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Needs Improvement' : 'Poor';
+                  const gradeColor = percentage >= 80 ? 'text-green-600' : percentage >= 60 ? 'text-yellow-600' : 'text-red-600';
                   return (
                     <div key={key} className="bg-white rounded-lg shadow-sm p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -331,14 +456,17 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
                           {safeValue}/{maxScore}
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full mb-3">
+                      <div className="h-2 bg-gray-200 rounded-full mb-2">
                         <div
                           className={`h-full rounded-full ${getScoreBg(safeValue, maxScore)}`}
                           style={{ width: `${Math.min(100, percentage)}%` }}
                         />
                       </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        {percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Needs Improvement' : 'Poor'}
+                      <div className="mb-2">
+                        <span className={`text-xs font-semibold ${gradeColor}`}>{gradeLabel}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {getRubricAssessment(key)}
                       </p>
                     </div>
                   );
