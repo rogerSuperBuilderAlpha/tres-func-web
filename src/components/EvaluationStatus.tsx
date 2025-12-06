@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 
 export interface TestProgress {
+  preflight: 'pending' | 'running' | 'complete' | 'failed' | 'warning';
   repoAnalysis: 'pending' | 'running' | 'complete' | 'failed';
   security: 'pending' | 'running' | 'complete' | 'failed';
   imageEdgeCases: 'pending' | 'running' | 'complete' | 'failed';
@@ -63,7 +64,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
   };
 
   const completedCount = getCompletedCount();
-  const totalTests = 10;
+  const totalTests = 11;
   const progressPercent = Math.round((completedCount / totalTests) * 100);
 
   return (
@@ -123,6 +124,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
           <div className="w-56 bg-gray-50 rounded-lg p-4">
             <h3 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Test Status</h3>
             <div className="space-y-1.5">
+              <StatusItem label="Pre-flight Check" status={progress?.preflight || 'pending'} />
               <StatusItem label="Repo Analysis" status={progress?.repoAnalysis || 'pending'} />
               <StatusItem label="Security" status={progress?.security || 'pending'} />
               <StatusItem label="Image Edge Cases" status={progress?.imageEdgeCases || 'pending'} />
@@ -166,7 +168,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
   );
 }
 
-function StatusItem({ label, status }: { label: string; status: 'pending' | 'running' | 'complete' | 'failed' }) {
+function StatusItem({ label, status }: { label: string; status: 'pending' | 'running' | 'complete' | 'failed' | 'warning' }) {
   return (
     <div className="flex items-center space-x-2">
       {status === 'pending' && (
@@ -182,6 +184,13 @@ function StatusItem({ label, status }: { label: string; status: 'pending' | 'run
           </svg>
         </div>
       )}
+      {status === 'warning' && (
+        <div className="w-3.5 h-3.5 rounded-full bg-yellow-500 flex items-center justify-center">
+          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
+          </svg>
+        </div>
+      )}
       {status === 'failed' && (
         <div className="w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center">
           <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,6 +201,7 @@ function StatusItem({ label, status }: { label: string; status: 'pending' | 'run
       <span className={`text-xs ${
         status === 'pending' ? 'text-gray-400' :
         status === 'failed' ? 'text-red-600' :
+        status === 'warning' ? 'text-yellow-600' :
         status === 'complete' ? 'text-green-600' :
         'text-gray-700'
       }`}>

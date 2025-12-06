@@ -133,6 +133,29 @@ export interface EvaluationReportData {
       findings?: string[];
       aiAnalysis?: AiTestAnalysis;
     };
+    preflight?: {
+      passed?: boolean;
+      recommendation?: 'proceed' | 'warning' | 'block';
+      summary?: string;
+      securityIssues?: Array<{
+        type: string;
+        severity: string;
+        description: string;
+      }>;
+      cheatingIndicators?: Array<{
+        type: string;
+        severity: string;
+        description: string;
+        evidence?: string;
+      }>;
+      repoMetadata?: {
+        commitCount: number;
+        firstCommitDate?: string;
+        lastCommitDate?: string;
+        authors: string[];
+      };
+      aiAnalysis?: AiTestAnalysis;
+    };
   };
 }
 

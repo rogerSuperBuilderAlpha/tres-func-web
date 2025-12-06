@@ -378,6 +378,65 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
             </div>
           </div>
 
+          {/* Pre-flight Issues */}
+          {report.suites?.preflight && report.suites.preflight.recommendation !== 'proceed' && (
+            <div className="mb-6 pb-6 border-b">
+              <h3 className={`text-sm font-semibold mb-2 uppercase tracking-wide ${
+                report.suites.preflight.recommendation === 'block' ? 'text-red-800' : 'text-yellow-800'
+              }`}>
+                Pre-flight {report.suites.preflight.recommendation === 'block' ? 'Blocked' : 'Warnings'}
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">{report.suites.preflight.summary}</p>
+
+              {/* Security Issues */}
+              {(report.suites.preflight.securityIssues?.length ?? 0) > 0 && (
+                <div className="mb-2">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Security Issues:</p>
+                  <ul className="space-y-1">
+                    {report.suites.preflight.securityIssues?.map((issue, i) => (
+                      <li key={i} className="text-xs text-red-600 flex items-start">
+                        <span className={`mr-1 px-1 rounded text-white text-[10px] ${
+                          issue.severity === 'critical' ? 'bg-red-600' :
+                          issue.severity === 'high' ? 'bg-orange-500' : 'bg-yellow-500'
+                        }`}>{issue.severity}</span>
+                        {issue.description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Integrity Concerns */}
+              {(report.suites.preflight.cheatingIndicators?.length ?? 0) > 0 && (
+                <div className="mb-2">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Integrity Concerns:</p>
+                  <ul className="space-y-1">
+                    {report.suites.preflight.cheatingIndicators?.map((indicator, i) => (
+                      <li key={i} className="text-xs text-yellow-700 flex items-start flex-wrap">
+                        <span className={`mr-1 px-1 rounded text-white text-[10px] ${
+                          indicator.severity === 'critical' ? 'bg-red-600' :
+                          indicator.severity === 'high' ? 'bg-orange-500' : 'bg-yellow-500'
+                        }`}>{indicator.severity}</span>
+                        {indicator.description}
+                        {indicator.evidence && (
+                          <span className="text-gray-500 ml-1">({indicator.evidence})</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* AI Analysis */}
+              {report.suites.preflight.aiAnalysis?.explanation && (
+                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                  <span className="font-medium">AI Assessment: </span>
+                  {report.suites.preflight.aiAnalysis.explanation}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Critical Failures */}
           {(report.criticalFailures?.length ?? 0) > 0 && (
             <div className="mb-6 pb-6 border-b">
