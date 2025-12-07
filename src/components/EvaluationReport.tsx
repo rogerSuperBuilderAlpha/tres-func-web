@@ -73,25 +73,38 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
   // Get AI assessment for rubric category
   const getRubricAssessment = (rubricKey: string): string => {
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
+
+    // Debug logging
+    console.log(`[getRubricAssessment] rubricKey: ${rubricKey}`);
+    console.log(`[getRubricAssessment] suites available:`, suites ? Object.keys(suites) : 'none');
+
     if (!suites) return 'Assessment data not available';
 
     const suiteKeys = rubricToSuiteMap[rubricKey] || [];
+    console.log(`[getRubricAssessment] checking suites:`, suiteKeys);
 
     // Collect AI analyses from relevant suites
     for (const suiteKey of suiteKeys) {
       const suite = suites[suiteKey];
-      if (!suite) continue;
+      if (!suite) {
+        console.log(`[getRubricAssessment] suite ${suiteKey} not found`);
+        continue;
+      }
 
       const aiAnalysis = suite.aiAnalysis as {
         explanation?: string;
         keyFindings?: string[];
       } | undefined;
 
+      console.log(`[getRubricAssessment] ${suiteKey} aiAnalysis:`, aiAnalysis);
+
       if (aiAnalysis?.explanation) {
         const findings = aiAnalysis.keyFindings?.slice(0, 2) || [];
-        return findings.length > 0
+        const result = findings.length > 0
           ? `${aiAnalysis.explanation} ${findings.join('. ')}`
           : aiAnalysis.explanation;
+        console.log(`[getRubricAssessment] returning AI analysis for ${rubricKey}:`, result.substring(0, 100));
+        return result;
       }
     }
 
