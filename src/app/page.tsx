@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { SubmissionForm } from '@/components/SubmissionForm';
 import { EvaluationStatus, TestProgress } from '@/components/EvaluationStatus';
 import { EvaluationReport } from '@/components/EvaluationReport';
 import { EvaluationHistory } from '@/components/EvaluationHistory';
+import { ManualReviewModal } from '@/components/ManualReviewModal';
 
 interface DetailedProgress {
   testName: string;
@@ -168,6 +169,40 @@ export default function Home() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showManualReview, setShowManualReview] = useState(false);
+  const pdfPollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Poll for PDF status after evaluation completes
+  const pollPdfStatus = useCallback((evaluationId: string) => {
+    // Clear any existing poll
+    if (pdfPollRef.current) {
+      clearTimeout(pdfPollRef.current);
+    }
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/status/${evaluationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setEvaluation(prev => prev ? {
+            ...prev,
+            pdfStatus: data.pdfStatus,
+            pdfUrl: data.pdfUrl,
+          } : null);
+
+          // Keep polling if pending or generating
+          if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
+            pdfPollRef.current = setTimeout(poll, 3000);
+          }
+        }
+      } catch (err) {
+        console.error('PDF status poll error:', err);
+      }
+    };
+
+    // Start polling
+    pdfPollRef.current = setTimeout(poll, 2000);
+  }, []);
 
   const handleSubmit = async (repoUrl: string, deployedUrl: string, backendRepoUrl?: string) => {
     setIsSubmitting(true);
@@ -251,6 +286,10 @@ export default function Home() {
             pdfStatus: data.pdfStatus,
             pdfUrl: data.pdfUrl,
           });
+          // Start PDF polling if not ready yet
+          if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
+            pollPdfStatus(evaluationId);
+          }
           return;
         }
 
@@ -290,7 +329,7 @@ export default function Home() {
     };
 
     poll();
-  }, []);
+  }, [pollPdfStatus]);
 
   const handleReset = () => {
     setEvaluation(null);
@@ -359,6 +398,10 @@ export default function Home() {
           pdfStatus: data.pdfStatus,
           pdfUrl: data.pdfUrl,
         });
+        // Start PDF polling if not ready yet
+        if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
+          pollPdfStatus(evaluationId);
+        }
       } else if (data.status === 'FAILED') {
         setError(data.error || 'This evaluation failed');
         setEvaluation(null);
@@ -451,9 +494,19 @@ export default function Home() {
             pdfStatus={evaluation.pdfStatus}
             pdfUrl={evaluation.pdfUrl}
             onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
+            onOpenManualReview={() => setShowManualReview(true)}
           />
         ) : null}
       </div>
+
+      {/* Manual Review Modal */}
+      {evaluation && (
+        <ManualReviewModal
+          isOpen={showManualReview}
+          onClose={() => setShowManualReview(false)}
+          evaluationId={evaluation.evaluationId}
+        />
+      )}
     </main>
   );
 }

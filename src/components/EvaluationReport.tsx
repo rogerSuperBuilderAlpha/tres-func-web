@@ -8,9 +8,10 @@ interface EvaluationReportProps {
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
   pdfUrl?: string;
   onRetryPdf?: () => void;
+  onOpenManualReview?: () => void;
 }
 
-export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf }: EvaluationReportProps) {
+export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpenManualReview }: EvaluationReportProps) {
   const tierColors = {
     STRONG_HIRE: 'bg-green-500 text-white',
     MAYBE: 'bg-yellow-500 text-white',
@@ -345,6 +346,18 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf }: Eval
                   <span className="font-medium">Note: </span>
                   {report.aiExecutiveSummary.fairnessConsiderations[0]}
                 </div>
+              )}
+              {/* Manual Review Button */}
+              {onOpenManualReview && (
+                <button
+                  onClick={onOpenManualReview}
+                  className="mt-3 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                  Complete Manual Review
+                </button>
               )}
             </div>
           )}
