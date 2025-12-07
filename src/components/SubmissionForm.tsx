@@ -45,9 +45,9 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
           Submit Candidate for Evaluation
         </h2>
 
-        <div className="flex gap-4">
-          {/* Left side - Form inputs */}
-          <div className="flex-1 space-y-3">
+        <div className="space-y-4">
+          {/* Form inputs */}
+          <div className="space-y-3">
             <div>
               <label
                 htmlFor="repoUrl"
@@ -148,43 +148,43 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
             </button>
           </div>
 
-          {/* Right side - Info panel */}
-          <div className="w-64 bg-gray-50 rounded-lg p-4 text-xs">
+          {/* What gets evaluated - full width below */}
+          <div className="bg-gray-50 rounded-lg p-4 text-xs">
             <h3 className="font-medium text-gray-800 mb-2">What gets evaluated?</h3>
-            <ul className="space-y-1 text-gray-600">
-              <li className="flex items-start">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-600">
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Code quality & structure
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Security vulnerabilities
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Error handling
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Image processing
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Form validation
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Resilience under load
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 Core functionality
-              </li>
-              <li className="flex items-start">
+              </div>
+              <div className="flex items-center">
                 <span className="text-blue-500 mr-1.5">•</span>
                 UX & accessibility
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
