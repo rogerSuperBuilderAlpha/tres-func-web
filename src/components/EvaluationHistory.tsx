@@ -1,24 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-interface EvaluationSummary {
-  evaluationId: string;
-  evaluatedAt: string;
-  repoUrl: string;
-  deployedUrl: string;
-  tier: 'STRONG_HIRE' | 'MAYBE' | 'NO_HIRE';
-  tierReason: string;
-  overallScore: number;
-  rubricScore?: number;
-  criticalFailuresCount: number;
-  reportUrl: string;
-  summary?: {
-    strengths: string[];
-    concerns: string[];
-  };
-  aiAssessment?: string;
-}
+import type { EvaluationSummary } from '@/types';
 
 interface EvaluationHistoryProps {
   apiBase: string;
@@ -52,31 +35,31 @@ export function EvaluationHistory({ apiBase, onSelectEvaluation }: EvaluationHis
     }
   };
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'STRONG_HIRE':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'MAYBE':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'NO_HIRE':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  // Get performance tier based on score (out of 90)
+  const getPerformanceTier = (score: number) => {
+    if (score >= 75) return { label: 'Excellent', color: 'bg-green-100 text-green-800 border-green-200' };
+    if (score >= 54) return { label: 'Proficient', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
+    return { label: 'Needs Work', color: 'bg-red-100 text-red-800 border-red-200' };
+  };
+
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString) return 'Unknown date';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return 'Invalid date';
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const extractRepoName = (url: string) => {
+  const extractRepoName = (url: string | undefined | null) => {
+    if (!url) return 'Unknown repository';
     try {
       const match = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
       return match ? match[1] : url;
@@ -154,12 +137,20 @@ export function EvaluationHistory({ apiBase, onSelectEvaluation }: EvaluationHis
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getTierColor(evaluation.tier)}`}>
-                    {evaluation.tier.replace('_', ' ')}
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {evaluation.rubricScore ?? evaluation.overallScore}/90
-                  </span>
+                  {(() => {
+                    const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
+                    const tier = getPerformanceTier(score);
+                    return (
+                      <>
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${tier.color}`}>
+                          {tier.label}
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {score}/90
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
                 <p className="text-sm text-gray-700 truncate font-medium">
                   {extractRepoName(evaluation.repoUrl)}

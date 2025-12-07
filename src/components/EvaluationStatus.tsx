@@ -1,30 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { TestProgress, DetailedProgress } from '@/types';
 
-export interface TestProgress {
-  preflight: 'pending' | 'running' | 'complete' | 'failed' | 'warning';
-  repoAnalysis: 'pending' | 'running' | 'complete' | 'failed';
-  security: 'pending' | 'running' | 'complete' | 'failed';
-  imageEdgeCases: 'pending' | 'running' | 'complete' | 'failed';
-  formInput: 'pending' | 'running' | 'complete' | 'failed';
-  resilience: 'pending' | 'running' | 'complete' | 'failed';
-  functional: 'pending' | 'running' | 'complete' | 'failed';
-  uxTest: 'pending' | 'running' | 'complete' | 'failed';
-  aiReview: 'pending' | 'running' | 'complete' | 'failed';
-  deployment: 'pending' | 'running' | 'complete' | 'failed';
-  reportGeneration: 'pending' | 'running' | 'complete' | 'failed';
-  pdfGeneration: 'pending' | 'running' | 'complete' | 'failed';
-}
-
-export interface DetailedProgress {
-  testName: string;
-  stage: string;
-  message: string;
-  details?: string;
-  percentage?: number;
-  timestamp: number;
-}
+// Re-export types for backward compatibility
+export type { TestProgress, DetailedProgress } from '@/types';
 
 interface EvaluationStatusProps {
   evaluationId: string;

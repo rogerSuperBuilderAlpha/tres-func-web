@@ -12,19 +12,19 @@ interface EvaluationReportProps {
 }
 
 export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpenManualReview }: EvaluationReportProps) {
-  const tierColors = {
-    STRONG_HIRE: 'bg-green-500 text-white',
-    MAYBE: 'bg-yellow-500 text-white',
-    NO_HIRE: 'bg-red-500 text-white',
-  };
-
-  const tierLabels = {
-    STRONG_HIRE: 'Strong Hire',
-    MAYBE: 'Maybe',
-    NO_HIRE: 'No Hire',
-  };
-
   const hasRubric = !!report.scores?.rubric;
+
+  // Get performance tier based on score percentage
+  const getScoreTier = (score: number, max: number) => {
+    const pct = (score / max) * 100;
+    if (pct >= 83) return { label: 'Excellent', color: 'bg-green-500 text-white' };
+    if (pct >= 60) return { label: 'Good', color: 'bg-yellow-500 text-white' };
+    return { label: 'Needs Work', color: 'bg-orange-500 text-white' };
+  };
+
+  const overallScore = report.scores?.rubric?.overall ?? report.scores?.overall ?? 0;
+  const maxScore = hasRubric ? 90 : 100;
+  const scoreTier = getScoreTier(overallScore, maxScore);
 
   const getScoreColor = (score: number, max: number = 100) => {
     const safeScore = Math.max(0, score || 0);
@@ -44,74 +44,80 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
     return 'bg-red-500';
   };
 
-  // New rubric labels (90-point scale)
-  const rubricLabels: Record<string, { label: string; max: number }> = {
-    coreFunctionality: { label: 'Core Functionality', max: 20 },
-    codeQuality: { label: 'Code Quality & Structure', max: 15 },
-    security: { label: 'Security & Vulnerability', max: 10 },
-    errorHandling: { label: 'Error Handling & Resilience', max: 10 },
-    imageProcessing: { label: 'Image Processing Quality', max: 10 },
-    formValidation: { label: 'Form Validation', max: 5 },
-    uxAccessibility: { label: 'UX & Accessibility', max: 5 },
-    deploymentCompliance: { label: 'Deployment & Instructions', max: 10 },
-    loadPerformance: { label: 'Load & Performance', max: 5 },
+  // New consolidated rubric labels (90-point scale, 6 categories)
+  const rubricLabels: Record<string, { label: string; max: number; description: string }> = {
+    coreFunctionality: {
+      label: 'Core Functionality',
+      max: 20,
+      description: 'Verification logic & image processing quality'
+    },
+    errorHandling: {
+      label: 'Error Handling & Resilience',
+      max: 20,
+      description: 'Error messages, form validation & stability'
+    },
+    uxAccessibility: {
+      label: 'UX & Accessibility',
+      max: 20,
+      description: 'User experience, accessibility & performance'
+    },
+    codeQuality: {
+      label: 'Code Quality & Structure',
+      max: 10,
+      description: 'Code organization & best practices'
+    },
+    security: {
+      label: 'Security & Vulnerability',
+      max: 10,
+      description: 'Security practices & vulnerability protection'
+    },
+    deploymentCompliance: {
+      label: 'Deployment & Instructions',
+      max: 10,
+      description: 'Deployment setup & documentation'
+    },
   };
 
   // Map rubric categories to their data sources
   const rubricToSuiteMap: Record<string, string[]> = {
-    coreFunctionality: ['functional'],
+    coreFunctionality: ['functional', 'imageEdgeCases'],
+    errorHandling: ['formInput', 'resilience', 'imageEdgeCases'],
+    uxAccessibility: ['uxTest', 'resilience'],
     codeQuality: ['repoAnalysis', 'aiReview'],
     security: ['security'],
-    errorHandling: ['formInput', 'resilience'],
-    imageProcessing: ['imageEdgeCases'],
-    formValidation: ['formInput'],
-    uxAccessibility: ['uxTest'],
-    deploymentCompliance: ['deployment'],
-    loadPerformance: ['uxTest', 'deployment'],
+    deploymentCompliance: ['deployment', 'repoAnalysis'],
   };
 
   // Get AI assessment for rubric category
   const getRubricAssessment = (rubricKey: string): string => {
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
-
-    // Debug logging
-    console.log(`[getRubricAssessment] rubricKey: ${rubricKey}`);
-    console.log(`[getRubricAssessment] suites available:`, suites ? Object.keys(suites) : 'none');
-
     if (!suites) return 'Assessment data not available';
 
     const suiteKeys = rubricToSuiteMap[rubricKey] || [];
-    console.log(`[getRubricAssessment] checking suites:`, suiteKeys);
 
     // Collect AI analyses from relevant suites
     for (const suiteKey of suiteKeys) {
       const suite = suites[suiteKey];
-      if (!suite) {
-        console.log(`[getRubricAssessment] suite ${suiteKey} not found`);
-        continue;
-      }
+      if (!suite) continue;
 
       const aiAnalysis = suite.aiAnalysis as {
         explanation?: string;
         keyFindings?: string[];
       } | undefined;
 
-      console.log(`[getRubricAssessment] ${suiteKey} aiAnalysis:`, aiAnalysis);
-
       if (aiAnalysis?.explanation) {
         const findings = aiAnalysis.keyFindings?.slice(0, 2) || [];
-        const result = findings.length > 0
+        return findings.length > 0
           ? `${aiAnalysis.explanation} ${findings.join('. ')}`
           : aiAnalysis.explanation;
-        console.log(`[getRubricAssessment] returning AI analysis for ${rubricKey}:`, result.substring(0, 100));
-        return result;
       }
     }
 
-    // Fallback assessments based on rubric category
+    // Fallback assessments based on rubric category (new 6-category structure)
     switch (rubricKey) {
       case 'coreFunctionality': {
         const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
+        const img = suites.imageEdgeCases as Record<string, unknown> | undefined;
         if (!func) return 'Functional tests completed';
         const scenarios = [
           func.scenarioA_Match?.passed,
@@ -119,9 +125,31 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
           func.scenarioC_AbvMismatch?.passed,
         ];
         const passed = scenarios.filter(Boolean).length;
-        if (passed === 3) return 'All core verification scenarios pass correctly';
-        if (passed === 0) return 'Core verification logic is not working - none of the test scenarios passed';
-        return `${passed}/3 verification scenarios passed - core logic needs improvement`;
+        const imgNote = img ? ' Image processing evaluated.' : '';
+        if (passed === 3) return 'All core verification scenarios pass correctly.' + imgNote;
+        if (passed === 0) return 'Core verification logic not working - none of the test scenarios passed.' + imgNote;
+        return `${passed}/3 verification scenarios passed.` + imgNote;
+      }
+      case 'errorHandling': {
+        const form = suites.formInput as Record<string, unknown> | undefined;
+        const res = suites.resilience as Record<string, unknown> | undefined;
+        const parts: string[] = [];
+        if (res?.recoversAfterError) parts.push('Recovers gracefully from errors');
+        if (res?.rapidSubmissions) parts.push('Handles rapid submissions');
+        if (form) parts.push('Form validation tested');
+        return parts.length > 0 ? parts.join('. ') : 'Error handling and form validation tested';
+      }
+      case 'uxAccessibility': {
+        const ux = suites.uxTest as Record<string, unknown> | undefined;
+        const res = suites.resilience as Record<string, unknown> | undefined;
+        if (!ux) return 'UX evaluation completed';
+        const parts: string[] = [];
+        if (ux.isMobileResponsive) parts.push('Mobile responsive');
+        if (ux.hasProperHeadings) parts.push('Proper heading structure');
+        if (ux.formLabelsPresent) parts.push('Form labels present');
+        const loadTime = ux.loadTimeMs as number | undefined;
+        if (loadTime && loadTime < 2000) parts.push(`Fast load (${(loadTime/1000).toFixed(1)}s)`);
+        return parts.length > 0 ? parts.join('. ') : 'UX, accessibility & performance evaluated';
       }
       case 'codeQuality': {
         const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
@@ -141,52 +169,14 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
         if (sec.disclosure?.apiKeysInClientCode) issues.push('API keys exposed in client code');
         return issues.length > 0 ? issues.join('. ') : 'No critical security vulnerabilities found';
       }
-      case 'errorHandling': {
-        const form = suites.formInput as Record<string, unknown> | undefined;
-        const res = suites.resilience as Record<string, unknown> | undefined;
-        const parts: string[] = [];
-        if (res?.recoversAfterError) parts.push('Recovers gracefully from errors');
-        if (res?.rapidSubmissions) parts.push('Handles rapid submissions');
-        return parts.length > 0 ? parts.join('. ') : 'Error handling tested';
-      }
-      case 'imageProcessing': {
-        const img = suites.imageEdgeCases as Record<string, unknown> | undefined;
-        if (!img) return 'Image processing tests completed';
-        return 'Image format handling and edge cases evaluated';
-      }
-      case 'formValidation': {
-        const form = suites.formInput as Record<string, unknown> | undefined;
-        if (!form) return 'Form validation tests completed';
-        return 'Form input validation and sanitization checked';
-      }
-      case 'uxAccessibility': {
-        const ux = suites.uxTest as Record<string, unknown> | undefined;
-        if (!ux) return 'UX evaluation completed';
-        const parts: string[] = [];
-        if (ux.isMobileResponsive) parts.push('Mobile responsive');
-        if (ux.hasProperHeadings) parts.push('Proper heading structure');
-        if (ux.formLabelsPresent) parts.push('Form labels present');
-        return parts.length > 0 ? parts.join('. ') : 'UX and accessibility evaluated';
-      }
       case 'deploymentCompliance': {
         const dep = suites.deployment as Record<string, unknown> | undefined;
-        if (!dep) return 'Deployment check completed';
+        const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
         const parts: string[] = [];
-        if (dep.urlAccessible) parts.push('URL accessible');
-        if (dep.formRendersCorrectly) parts.push('Form renders correctly');
-        if (dep.readmeHasSetupSteps) parts.push('README has setup instructions');
+        if (dep?.urlAccessible) parts.push('URL accessible');
+        if (dep?.formRendersCorrectly) parts.push('Form renders correctly');
+        if (repo?.readmeHasSetupInstructions) parts.push('README has setup instructions');
         return parts.length > 0 ? parts.join('. ') : 'Deployment compliance verified';
-      }
-      case 'loadPerformance': {
-        const ux = suites.uxTest as Record<string, unknown> | undefined;
-        if (!ux) return 'Performance evaluation completed';
-        const loadTime = ux.loadTimeMs as number | undefined;
-        if (loadTime) {
-          if (loadTime < 2000) return `Fast load time (${(loadTime/1000).toFixed(1)}s)`;
-          if (loadTime < 4000) return `Acceptable load time (${(loadTime/1000).toFixed(1)}s)`;
-          return `Slow load time (${(loadTime/1000).toFixed(1)}s) - optimization needed`;
-        }
-        return 'Page load performance measured';
       }
       default:
         return 'Assessment completed';
@@ -316,12 +306,14 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
       {/* Left Column - Summary */}
       <div className="w-1/3 border-r bg-white flex flex-col">
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Tier Badge */}
+          {/* Score Badge */}
           <div className="text-center mb-6">
-            <div className={`inline-block px-6 py-3 rounded-lg ${tierColors[report.tier]}`}>
-              <span className="text-2xl font-bold">{tierLabels[report.tier]}</span>
+            <div className={`inline-block px-6 py-3 rounded-lg ${scoreTier.color}`}>
+              <span className="text-2xl font-bold">{scoreTier.label}</span>
             </div>
-            <p className="text-sm text-gray-500 mt-2">{report.tierReason}</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {Math.round((overallScore / maxScore) * 100)}% Score • Technical Assessment
+            </p>
           </div>
 
           {/* Overall Score */}
@@ -347,13 +339,21 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
           {report.aiExecutiveSummary && (
             <div className="mb-6 pb-6 border-b">
               <h3 className="text-sm font-semibold text-blue-800 mb-2 uppercase tracking-wide">
-                AI Assessment
+                AI Technical Assessment
               </h3>
               <p className="text-sm text-gray-700 mb-2">{report.aiExecutiveSummary.overallAssessment}</p>
-              <div className="bg-blue-50 rounded p-2 text-sm">
-                <span className="font-medium text-blue-800">Recommendation: </span>
-                <span className="text-blue-700">{report.aiExecutiveSummary.hiringRecommendation}</span>
-              </div>
+              {report.aiExecutiveSummary.keyStrengths && report.aiExecutiveSummary.keyStrengths.length > 0 && (
+                <div className="bg-green-50 rounded p-2 text-sm mb-2">
+                  <span className="font-medium text-green-800">Key Strengths: </span>
+                  <span className="text-green-700">{report.aiExecutiveSummary.keyStrengths.slice(0, 2).join(', ')}</span>
+                </div>
+              )}
+              {report.aiExecutiveSummary.keyWeaknesses && report.aiExecutiveSummary.keyWeaknesses.length > 0 && (
+                <div className="bg-yellow-50 rounded p-2 text-sm mb-2">
+                  <span className="font-medium text-yellow-800">Areas to Improve: </span>
+                  <span className="text-yellow-700">{report.aiExecutiveSummary.keyWeaknesses.slice(0, 2).join(', ')}</span>
+                </div>
+              )}
               {report.aiExecutiveSummary.fairnessConsiderations && report.aiExecutiveSummary.fairnessConsiderations.length > 0 && (
                 <div className="mt-2 text-xs text-gray-500">
                   <span className="font-medium">Note: </span>
@@ -385,7 +385,7 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline text-sm truncate block"
               >
-                {report.repoUrl.replace('https://github.com/', '')}
+                {(report.repoUrl || '').replace('https://github.com/', '')}
               </a>
             </div>
             <div>
@@ -396,13 +396,13 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline text-sm truncate block"
               >
-                {report.deployedUrl.replace('https://', '')}
+                {(report.deployedUrl || '').replace('https://', '')}
               </a>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Evaluated</p>
               <p className="text-sm text-gray-700">
-                {new Date(report.evaluatedAt).toLocaleString()}
+                {report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'}
               </p>
             </div>
           </div>
@@ -519,17 +519,17 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
             </div>
           )}
 
-          {/* Critical Failures */}
-          {(report.criticalFailures?.length ?? 0) > 0 && (
+          {/* Critical Issues */}
+          {((report.criticalIssues?.length ?? 0) > 0 || (report.criticalFailures?.length ?? 0) > 0) && (
             <div className="mb-6 pb-6 border-b">
-              <h3 className="text-sm font-semibold text-red-800 mb-2 uppercase tracking-wide">
-                Critical Failures
+              <h3 className="text-sm font-semibold text-orange-800 mb-2 uppercase tracking-wide">
+                Critical Issues
               </h3>
               <ul className="space-y-1">
-                {report.criticalFailures.map((failure, i) => (
-                  <li key={i} className="text-sm text-red-700 flex items-start">
-                    <span className="mr-2">•</span>
-                    {failure}
+                {(report.criticalIssues ?? report.criticalFailures ?? []).map((issue, i) => (
+                  <li key={i} className="text-sm text-orange-700 flex items-start">
+                    <span className="mr-2">⚠</span>
+                    {issue}
                   </li>
                 ))}
               </ul>

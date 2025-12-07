@@ -42,13 +42,13 @@ const REVIEW_QUESTIONS = [
   },
   {
     id: 'recommendation',
-    question: 'What is your hiring recommendation and why?',
-    placeholder: 'e.g., Strong hire - excellent problem solving and clean code...',
+    question: 'What is your overall assessment?',
+    placeholder: 'e.g., Solid implementation with room for improvement in error handling...',
   },
   {
     id: 'notes',
-    question: 'Any additional notes for the hiring team?',
-    placeholder: 'e.g., Would be good fit for frontend role, needs mentoring on security...',
+    question: 'Any additional notes or feedback?',
+    placeholder: 'e.g., Shows good understanding of core concepts, could benefit from more testing...',
   },
 ];
 
