@@ -3,18 +3,19 @@
 import { useState } from 'react';
 
 interface SubmissionFormProps {
-  onSubmit: (repoUrl: string, deployedUrl: string) => void;
+  onSubmit: (repoUrl: string, deployedUrl: string, backendRepoUrl?: string) => void;
   isSubmitting: boolean;
 }
 
 export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) {
   const [repoUrl, setRepoUrl] = useState('');
+  const [backendRepoUrl, setBackendRepoUrl] = useState('');
   const [deployedUrl, setDeployedUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (repoUrl && deployedUrl) {
-      onSubmit(repoUrl, deployedUrl);
+      onSubmit(repoUrl, deployedUrl, backendRepoUrl || undefined);
     }
   };
 
@@ -34,6 +35,7 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
   const canSubmit =
     isValidGitHubUrl(repoUrl) &&
     isValidUrl(deployedUrl) &&
+    (!backendRepoUrl || isValidGitHubUrl(backendRepoUrl)) &&
     !isSubmitting;
 
   return (
@@ -51,14 +53,14 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
                 htmlFor="repoUrl"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                GitHub Repository URL
+                Frontend Repository URL <span className="text-red-500">*</span>
               </label>
               <input
                 type="url"
                 id="repoUrl"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://github.com/username/repo"
+                placeholder="https://github.com/username/frontend-repo"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
                 required
               />
@@ -71,10 +73,32 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
 
             <div>
               <label
+                htmlFor="backendRepoUrl"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Backend Repository URL <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                id="backendRepoUrl"
+                value={backendRepoUrl}
+                onChange={(e) => setBackendRepoUrl(e.target.value)}
+                placeholder="https://github.com/username/backend-repo"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+              />
+              {backendRepoUrl && !isValidGitHubUrl(backendRepoUrl) && (
+                <p className="mt-1 text-xs text-red-500">
+                  Please enter a valid GitHub URL
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
                 htmlFor="deployedUrl"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Deployed Application URL
+                Deployed Application URL <span className="text-red-500">*</span>
               </label>
               <input
                 type="url"
@@ -90,6 +114,15 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
                   Please enter a valid URL
                 </p>
               )}
+            </div>
+
+            {/* Methodology note */}
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+              <p className="font-medium mb-1">About deployment methodology</p>
+              <p className="text-blue-600">
+                Whether you use a monorepo, separate repos, or serverless architecture does not affect our evaluation.
+                We focus on how you solve the problem, not your deployment choices.
+              </p>
             </div>
 
             <button

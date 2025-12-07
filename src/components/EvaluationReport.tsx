@@ -7,9 +7,10 @@ interface EvaluationReportProps {
   onReset: () => void;
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
   pdfUrl?: string;
+  onRetryPdf?: () => void;
 }
 
-export function EvaluationReport({ report, pdfStatus, pdfUrl }: EvaluationReportProps) {
+export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf }: EvaluationReportProps) {
   const tierColors = {
     STRONG_HIRE: 'bg-green-500 text-white',
     MAYBE: 'bg-yellow-500 text-white',
@@ -404,11 +405,24 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl }: EvaluationReport
                 Generating expert report...
               </div>
             ) : pdfStatus === 'failed' ? (
-              <div className="flex items-center gap-2 text-sm text-red-600">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                PDF generation failed
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  PDF generation failed
+                </div>
+                {onRetryPdf && (
+                  <button
+                    onClick={onRetryPdf}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Retry PDF Generation
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-gray-400">

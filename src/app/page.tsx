@@ -169,7 +169,7 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (repoUrl: string, deployedUrl: string) => {
+  const handleSubmit = async (repoUrl: string, deployedUrl: string, backendRepoUrl?: string) => {
     setIsSubmitting(true);
     setError(null);
     setEvaluation(null);
@@ -181,7 +181,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ repoUrl, deployedUrl }),
+        body: JSON.stringify({ repoUrl, deployedUrl, backendRepoUrl }),
       });
 
       const data = await response.json();
@@ -295,6 +295,45 @@ export default function Home() {
   const handleReset = () => {
     setEvaluation(null);
     setError(null);
+  };
+
+  const handleRetryPdf = async (evaluationId: string) => {
+    // Update local state to show generating
+    setEvaluation(prev => prev ? { ...prev, pdfStatus: 'generating' } : null);
+
+    try {
+      const response = await fetch(`${API_BASE}/retry-pdf/${evaluationId}`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to retry PDF generation');
+      }
+
+      // Start polling for PDF status
+      const pollPdfStatus = async () => {
+        const statusResponse = await fetch(`${API_BASE}/status/${evaluationId}`);
+        if (statusResponse.ok) {
+          const data = await statusResponse.json();
+          setEvaluation(prev => prev ? {
+            ...prev,
+            pdfStatus: data.pdfStatus,
+            pdfUrl: data.pdfUrl,
+          } : null);
+
+          // Keep polling if still generating
+          if (data.pdfStatus === 'generating') {
+            setTimeout(pollPdfStatus, 3000);
+          }
+        }
+      };
+
+      // Start polling after a short delay
+      setTimeout(pollPdfStatus, 2000);
+    } catch (err) {
+      console.error('Failed to retry PDF:', err);
+      setEvaluation(prev => prev ? { ...prev, pdfStatus: 'failed' } : null);
+    }
   };
 
   const handleSelectEvaluation = async (evaluationId: string) => {
@@ -411,6 +450,7 @@ export default function Home() {
             onReset={handleReset}
             pdfStatus={evaluation.pdfStatus}
             pdfUrl={evaluation.pdfUrl}
+            onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
           />
         ) : null}
       </div>
