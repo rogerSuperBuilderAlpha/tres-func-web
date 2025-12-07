@@ -14,6 +14,7 @@ export interface TestProgress {
   aiReview: 'pending' | 'running' | 'complete' | 'failed';
   deployment: 'pending' | 'running' | 'complete' | 'failed';
   reportGeneration: 'pending' | 'running' | 'complete' | 'failed';
+  pdfGeneration: 'pending' | 'running' | 'complete' | 'failed';
 }
 
 export interface DetailedProgress {
@@ -64,7 +65,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
   };
 
   const completedCount = getCompletedCount();
-  const totalTests = 11;
+  const totalTests = 12;
   const progressPercent = Math.round((completedCount / totalTests) * 100);
 
   return (
@@ -135,6 +136,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
               <StatusItem label="AI Review" status={progress?.aiReview || 'pending'} />
               <StatusItem label="Deployment" status={progress?.deployment || 'pending'} />
               <StatusItem label="Report Gen" status={progress?.reportGeneration || 'pending'} />
+              <StatusItem label="PDF Report" status={progress?.pdfGeneration || 'pending'} />
             </div>
           </div>
         </div>

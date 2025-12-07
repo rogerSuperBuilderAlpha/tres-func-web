@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { SubmissionForm } from '@/components/SubmissionForm';
 import { EvaluationStatus, TestProgress } from '@/components/EvaluationStatus';
 import { EvaluationReport } from '@/components/EvaluationReport';
+import { EvaluationHistory } from '@/components/EvaluationHistory';
 
 interface DetailedProgress {
   testName: string;
@@ -23,6 +24,8 @@ interface Evaluation {
   progress?: TestProgress;
   startTime?: string;
   detailedProgress?: DetailedProgress[];
+  pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
+  pdfUrl?: string;
 }
 
 interface AiTestAnalysis {
@@ -245,6 +248,8 @@ export default function Home() {
             status: 'COMPLETED',
             reportUrl: data.reportUrl,
             report: data.report,
+            pdfStatus: data.pdfStatus,
+            pdfUrl: data.pdfUrl,
           });
           return;
         }
@@ -290,6 +295,43 @@ export default function Home() {
   const handleReset = () => {
     setEvaluation(null);
     setError(null);
+  };
+
+  const handleSelectEvaluation = async (evaluationId: string) => {
+    setError(null);
+    setEvaluation({
+      evaluationId,
+      status: 'PROCESSING',
+    });
+
+    try {
+      const response = await fetch(`${API_BASE}/status/${evaluationId}`);
+      if (!response.ok) {
+        throw new Error('Failed to load evaluation');
+      }
+      const data = await response.json();
+
+      if (data.status === 'COMPLETED' && data.report) {
+        setEvaluation({
+          evaluationId,
+          status: 'COMPLETED',
+          reportUrl: data.reportUrl,
+          report: data.report,
+          pdfStatus: data.pdfStatus,
+          pdfUrl: data.pdfUrl,
+        });
+      } else if (data.status === 'FAILED') {
+        setError(data.error || 'This evaluation failed');
+        setEvaluation(null);
+      } else {
+        // Still processing - start polling
+        pollStatus(evaluationId);
+      }
+    } catch (err) {
+      console.error('Failed to load evaluation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load evaluation');
+      setEvaluation(null);
+    }
   };
 
   return (
@@ -341,8 +383,18 @@ export default function Home() {
       {/* Main content - fills remaining space */}
       <div className="flex-1 overflow-hidden">
         {!evaluation ? (
-          <div className="h-full flex items-center justify-center p-6">
-            <SubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+          <div className="h-full overflow-y-auto p-6">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="flex flex-col justify-center">
+                <SubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+              </div>
+              <div>
+                <EvaluationHistory
+                  apiBase={API_BASE}
+                  onSelectEvaluation={handleSelectEvaluation}
+                />
+              </div>
+            </div>
           </div>
         ) : evaluation.status === 'PROCESSING' ? (
           <div className="h-full flex items-center justify-center p-6">
@@ -354,7 +406,12 @@ export default function Home() {
             />
           </div>
         ) : evaluation.status === 'COMPLETED' && evaluation.report ? (
-          <EvaluationReport report={evaluation.report} onReset={handleReset} />
+          <EvaluationReport
+            report={evaluation.report}
+            onReset={handleReset}
+            pdfStatus={evaluation.pdfStatus}
+            pdfUrl={evaluation.pdfUrl}
+          />
         ) : null}
       </div>
     </main>
