@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://3mw2hq6l57.execute-api.us-east-1.amazonaws.com/prod';
+
 interface ManualReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   evaluationId: string;
   candidateName?: string;
+  onReviewSaved?: () => void;
 }
 
 interface ChecklistItem {
@@ -49,11 +52,13 @@ const REVIEW_QUESTIONS = [
   },
 ];
 
-export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName }: ManualReviewModalProps) {
+export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName, onReviewSaved }: ManualReviewModalProps) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(
     CHECKLIST_ITEMS.map(item => ({ ...item, checked: false }))
   );
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -72,7 +77,43 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
   const completedCount = checklist.filter(item => item.checked).length;
   const totalCount = checklist.length;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setIsSaving(true);
+    setError(null);
+
+    const reviewData = {
+      checklist: checklist.filter(item => item.checked).map(item => item.id),
+      answers,
+      reviewedAt: new Date().toISOString(),
+      reviewerNotes: answers.notes,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/review/${evaluationId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save review');
+      }
+
+      console.log('Manual review saved successfully');
+      onReviewSaved?.();
+      onClose();
+    } catch (err) {
+      console.error('Failed to save manual review:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save review');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownload = () => {
     const reviewData = {
       evaluationId,
       checklist: checklist.filter(item => item.checked).map(item => item.id),
@@ -80,10 +121,6 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
       completedAt: new Date().toISOString(),
     };
 
-    // For now, just log and close - could save to backend later
-    console.log('Manual review submitted:', reviewData);
-
-    // Download as JSON for record keeping
     const blob = new Blob([JSON.stringify(reviewData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -91,8 +128,6 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
     a.download = `manual-review-${evaluationId}.json`;
     a.click();
     URL.revokeObjectURL(url);
-
-    onClose();
   };
 
   return (
@@ -175,19 +210,47 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex items-center justify-between">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:text-gray-900 transition text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-            >
-              Save & Download Review
-            </button>
+          <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4">
+            {error && (
+              <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {error}
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onClose}
+                  disabled={isSaving}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900 transition text-sm disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={isSaving}
+                  className="px-4 py-2 text-gray-500 hover:text-gray-700 transition text-sm disabled:opacity-50"
+                >
+                  Download JSON
+                </button>
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={isSaving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Review'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
