@@ -265,43 +265,53 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen flex flex-col overflow-hidden bg-gray-50">
+    <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern">
       {/* Header - fixed height */}
-      <header className="flex-shrink-0 bg-white border-b px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              TTB Take-Home Evaluator
-            </h1>
-            <p className="text-sm text-gray-500">
-              Automated candidate evaluation system
-            </p>
+      <header className="flex-shrink-0 glass border-b border-navy-200/50">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center gap-4">
+              {/* Logo */}
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-navy-700 to-navy-900 shadow-lg">
+                <svg className="w-6 h-6 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-navy-900 tracking-tight">
+                  TTB Evaluator
+                </h1>
+                <p className="text-sm text-navy-500">
+                  Automated candidate assessment
+                </p>
+              </div>
+            </div>
+            {evaluation && (
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 text-sm bg-navy-100 text-navy-700 rounded-lg hover:bg-navy-200 transition font-medium"
+              >
+                ← New Evaluation
+              </button>
+            )}
           </div>
-          {evaluation && (
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
-            >
-              New Evaluation
-            </button>
-          )}
         </div>
       </header>
 
       {/* Error banner */}
       {error && (
-        <div className="flex-shrink-0 bg-red-50 border-b border-red-200 px-6 py-3">
+        <div className="flex-shrink-0 bg-danger-50 border-b border-danger-200 px-6 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 text-danger-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-red-700">{error}</span>
+              <span className="text-danger-700">{error}</span>
             </div>
             {evaluation?.status === 'FAILED' && (
               <button
                 onClick={handleReset}
-                className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition"
+                className="px-3 py-1 text-sm bg-danger-600 text-white rounded hover:bg-danger-500 transition"
               >
                 Try Again
               </button>

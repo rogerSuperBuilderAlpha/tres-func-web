@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { EvaluationReportData } from '@/app/page';
 
 interface EvaluationReportProps {
@@ -11,15 +12,66 @@ interface EvaluationReportProps {
   onOpenManualReview?: () => void;
 }
 
+// Collapsible section component
+function CollapsibleSection({ 
+  title, 
+  icon, 
+  children, 
+  defaultOpen = false,
+  badge,
+  badgeColor = 'bg-navy-100 text-navy-600'
+}: { 
+  title: string; 
+  icon: React.ReactNode; 
+  children: React.ReactNode; 
+  defaultOpen?: boolean;
+  badge?: string | number;
+  badgeColor?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-b border-navy-100 last:border-b-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between py-3 px-1 text-left hover:bg-navy-50/50 transition rounded-lg -mx-1"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-navy-500">{icon}</span>
+          <span className="text-sm font-semibold text-navy-800 uppercase tracking-wide">{title}</span>
+          {badge !== undefined && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>
+              {badge}
+            </span>
+          )}
+        </div>
+        <svg 
+          className={`w-4 h-4 text-navy-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div className={`collapse-content ${isOpen ? 'open' : ''}`}>
+        <div className="pb-4">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpenManualReview }: EvaluationReportProps) {
   const hasRubric = !!report.scores?.rubric;
 
   // Get performance tier based on score percentage
   const getScoreTier = (score: number, max: number) => {
     const pct = (score / max) * 100;
-    if (pct >= 83) return { label: 'Excellent', color: 'bg-green-500 text-white' };
-    if (pct >= 60) return { label: 'Good', color: 'bg-yellow-500 text-white' };
-    return { label: 'Needs Work', color: 'bg-orange-500 text-white' };
+    if (pct >= 83) return { label: 'Excellent', color: 'bg-gradient-to-r from-success-500 to-success-600 text-white' };
+    if (pct >= 60) return { label: 'Good', color: 'bg-gradient-to-r from-warning-500 to-warning-600 text-white' };
+    return { label: 'Needs Work', color: 'bg-gradient-to-r from-danger-500 to-danger-600 text-white' };
   };
 
   const overallScore = report.scores?.rubric?.overall ?? report.scores?.overall ?? 0;
@@ -30,51 +82,57 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
     const safeScore = Math.max(0, score || 0);
     const safeMax = Math.max(1, max || 100);
     const pct = (safeScore / safeMax) * 100;
-    if (pct >= 80) return 'text-green-600';
-    if (pct >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (pct >= 80) return 'text-success-600';
+    if (pct >= 60) return 'text-warning-600';
+    return 'text-danger-600';
   };
 
   const getScoreBg = (score: number, max: number = 100) => {
     const safeScore = Math.max(0, score || 0);
     const safeMax = Math.max(1, max || 100);
     const pct = (safeScore / safeMax) * 100;
-    if (pct >= 80) return 'bg-green-500';
-    if (pct >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (pct >= 80) return 'bg-success-500';
+    if (pct >= 60) return 'bg-warning-500';
+    return 'bg-danger-500';
   };
 
   // New consolidated rubric labels (90-point scale, 6 categories)
-  const rubricLabels: Record<string, { label: string; max: number; description: string }> = {
+  const rubricLabels: Record<string, { label: string; max: number; description: string; icon: string }> = {
     coreFunctionality: {
       label: 'Core Functionality',
       max: 20,
-      description: 'Verification logic & image processing quality'
+      description: 'Verification logic & image processing quality',
+      icon: '⚡'
     },
     errorHandling: {
-      label: 'Error Handling & Resilience',
+      label: 'Error Handling',
       max: 20,
-      description: 'Error messages, form validation & stability'
+      description: 'Error messages, form validation & stability',
+      icon: '🛡️'
     },
     uxAccessibility: {
       label: 'UX & Accessibility',
       max: 20,
-      description: 'User experience, accessibility & performance'
+      description: 'User experience, accessibility & performance',
+      icon: '✨'
     },
     codeQuality: {
-      label: 'Code Quality & Structure',
+      label: 'Code Quality',
       max: 10,
-      description: 'Code organization & best practices'
+      description: 'Code organization & best practices',
+      icon: '📐'
     },
     security: {
-      label: 'Security & Vulnerability',
+      label: 'Security',
       max: 10,
-      description: 'Security practices & vulnerability protection'
+      description: 'Security practices & vulnerability protection',
+      icon: '🔒'
     },
     deploymentCompliance: {
-      label: 'Deployment & Instructions',
+      label: 'Deployment',
       max: 10,
-      description: 'Deployment setup & documentation'
+      description: 'Deployment setup & documentation',
+      icon: '🚀'
     },
   };
 
@@ -113,7 +171,7 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
       }
     }
 
-    // Fallback assessments based on rubric category (new 6-category structure)
+    // Fallback assessments based on rubric category
     switch (rubricKey) {
       case 'coreFunctionality': {
         const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
@@ -141,7 +199,6 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
       }
       case 'uxAccessibility': {
         const ux = suites.uxTest as Record<string, unknown> | undefined;
-        const res = suites.resilience as Record<string, unknown> | undefined;
         if (!ux) return 'UX evaluation completed';
         const parts: string[] = [];
         if (ux.isMobileResponsive) parts.push('Mobile responsive');
@@ -198,8 +255,8 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
   // Map score keys to suite keys for AI analysis
   const scoreToSuiteMap: Record<string, string> = {
     security: 'security',
-    errorHandling: 'formInput', // Uses form and image tests
-    edgeCases: 'imageEdgeCases', // Uses image and resilience tests
+    errorHandling: 'formInput',
+    edgeCases: 'imageEdgeCases',
     codeQuality: 'repoAnalysis',
     documentation: 'repoAnalysis',
     functional: 'functional',
@@ -212,14 +269,11 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
     if (!suites) return 'Analysis data not available';
 
-    // Try to get AI analysis for this score
     const suiteKey = scoreToSuiteMap[key];
     const suite = suiteKey ? suites[suiteKey] : undefined;
     const aiAnalysis = suite?.aiAnalysis as { explanation?: string; keyFindings?: string[]; failureAttribution?: string } | undefined;
 
-    // If AI analysis available, prefer that explanation
     if (aiAnalysis?.explanation) {
-      // Add key findings if available
       const keyFindings = aiAnalysis.keyFindings || [];
       if (keyFindings.length > 0) {
         return `${aiAnalysis.explanation} ${keyFindings.slice(0, 2).join('. ')}`;
@@ -227,7 +281,6 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
       return aiAnalysis.explanation;
     }
 
-    // Fallback to manual explanations
     switch (key) {
       case 'security':
         const sec = suites.security as Record<string, unknown> | undefined;
@@ -286,7 +339,6 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
     }
   };
 
-  // Get failure attribution badge if test failed due to infrastructure
   const getAttributionBadge = (key: string): string | null => {
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
     if (!suites) return null;
@@ -302,69 +354,69 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
   };
 
   return (
-    <div className="h-full flex">
-      {/* Left Column - Summary */}
-      <div className="w-1/3 border-r bg-white flex flex-col">
-        <div className="flex-1 overflow-y-auto p-6">
+    <div className="h-full flex flex-col lg:flex-row overflow-hidden">
+      {/* Left Column - Summary (scrollable on mobile, sidebar on desktop) */}
+      <div className="w-full lg:w-96 xl:w-[420px] flex-shrink-0 border-b lg:border-b-0 lg:border-r border-navy-200 glass overflow-y-auto">
+        <div className="p-5 lg:p-6">
           {/* Score Badge */}
           <div className="text-center mb-6">
-            <div className={`inline-block px-6 py-3 rounded-lg ${scoreTier.color}`}>
+            <div className={`inline-block px-8 py-3 rounded-2xl shadow-lg ${scoreTier.color}`}>
               <span className="text-2xl font-bold">{scoreTier.label}</span>
             </div>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-navy-500 mt-3">
               {Math.round((overallScore / maxScore) * 100)}% Score • Technical Assessment
             </p>
           </div>
 
           {/* Overall Score */}
-          <div className="text-center mb-6 pb-6 border-b">
+          <div className="text-center mb-6 pb-6 border-b border-navy-200">
             {hasRubric ? (
               <>
-                <div className={`text-6xl font-bold ${getScoreColor(report.scores.rubric?.overall ?? 0, 90)}`}>
+                <div className={`text-6xl font-bold font-mono ${getScoreColor(report.scores.rubric?.overall ?? 0, 90)}`}>
                   {report.scores.rubric?.overall ?? 0}
                 </div>
-                <p className="text-gray-500">Overall Score (out of 90)</p>
+                <p className="text-navy-500 mt-1">Overall Score (out of 90)</p>
               </>
             ) : (
               <>
-                <div className={`text-6xl font-bold ${getScoreColor(report.scores?.overall ?? 0)}`}>
+                <div className={`text-6xl font-bold font-mono ${getScoreColor(report.scores?.overall ?? 0)}`}>
                   {report.scores?.overall ?? 0}
                 </div>
-                <p className="text-gray-500">Overall Score</p>
+                <p className="text-navy-500 mt-1">Overall Score</p>
               </>
             )}
           </div>
 
-          {/* AI Executive Summary */}
+          {/* AI Executive Summary - Collapsible */}
           {report.aiExecutiveSummary && (
-            <div className="mb-6 pb-6 border-b">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2 uppercase tracking-wide">
-                AI Technical Assessment
-              </h3>
-              <p className="text-sm text-gray-700 mb-2">{report.aiExecutiveSummary.overallAssessment}</p>
+            <CollapsibleSection
+              title="AI Assessment"
+              icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
+              defaultOpen={true}
+            >
+              <p className="text-sm text-navy-700 mb-3">{report.aiExecutiveSummary.overallAssessment}</p>
               {report.aiExecutiveSummary.keyStrengths && report.aiExecutiveSummary.keyStrengths.length > 0 && (
-                <div className="bg-green-50 rounded p-2 text-sm mb-2">
-                  <span className="font-medium text-green-800">Key Strengths: </span>
-                  <span className="text-green-700">{report.aiExecutiveSummary.keyStrengths.slice(0, 2).join(', ')}</span>
+                <div className="bg-success-50 border border-success-200 rounded-xl p-3 text-sm mb-2">
+                  <span className="font-semibold text-success-700">Strengths: </span>
+                  <span className="text-success-600">{report.aiExecutiveSummary.keyStrengths.slice(0, 2).join(', ')}</span>
                 </div>
               )}
               {report.aiExecutiveSummary.keyWeaknesses && report.aiExecutiveSummary.keyWeaknesses.length > 0 && (
-                <div className="bg-yellow-50 rounded p-2 text-sm mb-2">
-                  <span className="font-medium text-yellow-800">Areas to Improve: </span>
-                  <span className="text-yellow-700">{report.aiExecutiveSummary.keyWeaknesses.slice(0, 2).join(', ')}</span>
+                <div className="bg-warning-50 border border-warning-200 rounded-xl p-3 text-sm mb-2">
+                  <span className="font-semibold text-warning-700">Areas to Improve: </span>
+                  <span className="text-warning-600">{report.aiExecutiveSummary.keyWeaknesses.slice(0, 2).join(', ')}</span>
                 </div>
               )}
               {report.aiExecutiveSummary.fairnessConsiderations && report.aiExecutiveSummary.fairnessConsiderations.length > 0 && (
-                <div className="mt-2 text-xs text-gray-500">
+                <div className="mt-2 text-xs text-navy-500 bg-navy-50 rounded-lg p-2">
                   <span className="font-medium">Note: </span>
                   {report.aiExecutiveSummary.fairnessConsiderations[0]}
                 </div>
               )}
-              {/* Manual Review Button */}
               {onOpenManualReview && (
                 <button
                   onClick={onOpenManualReview}
-                  className="mt-3 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2"
+                  className="mt-3 w-full px-4 py-2.5 bg-navy-100 text-navy-700 rounded-xl hover:bg-navy-200 transition text-sm font-medium flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -372,50 +424,59 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                   Complete Manual Review
                 </button>
               )}
-            </div>
+            </CollapsibleSection>
           )}
 
-          {/* Links */}
-          <div className="space-y-3 mb-6 pb-6 border-b">
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Repository</p>
-              <a
-                href={report.repoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline text-sm truncate block"
-              >
-                {(report.repoUrl || '').replace('https://github.com/', '')}
-              </a>
+          {/* Links - Collapsible */}
+          <CollapsibleSection
+            title="Links"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>}
+            defaultOpen={false}
+          >
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-navy-500 uppercase tracking-wide mb-1">Repository</p>
+                <a
+                  href={report.repoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-navy-700 hover:text-gold-600 text-sm truncate block font-medium"
+                >
+                  {(report.repoUrl || '').replace('https://github.com/', '')}
+                </a>
+              </div>
+              <div>
+                <p className="text-xs text-navy-500 uppercase tracking-wide mb-1">Deployed App</p>
+                <a
+                  href={report.deployedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-navy-700 hover:text-gold-600 text-sm truncate block font-medium"
+                >
+                  {(report.deployedUrl || '').replace('https://', '')}
+                </a>
+              </div>
+              <div>
+                <p className="text-xs text-navy-500 uppercase tracking-wide mb-1">Evaluated</p>
+                <p className="text-sm text-navy-700">
+                  {report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Deployed App</p>
-              <a
-                href={report.deployedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline text-sm truncate block"
-              >
-                {(report.deployedUrl || '').replace('https://', '')}
-              </a>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Evaluated</p>
-              <p className="text-sm text-gray-700">
-                {report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'}
-              </p>
-            </div>
-          </div>
+          </CollapsibleSection>
 
           {/* PDF Report Download */}
-          <div className="mb-6 pb-6 border-b">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Expert Report</p>
+          <CollapsibleSection
+            title="Expert Report"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+            defaultOpen={true}
+          >
             {pdfStatus === 'ready' && pdfUrl ? (
               <a
                 href={pdfUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-navy-700 to-navy-900 text-white rounded-xl hover:from-navy-600 hover:to-navy-800 transition text-sm font-medium shadow-lg"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -423,7 +484,7 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                 Download PDF Report
               </a>
             ) : pdfStatus === 'generating' ? (
-              <div className="flex items-center gap-2 text-sm text-blue-600">
+              <div className="flex items-center gap-2 text-sm text-gold-600">
                 <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -432,7 +493,7 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
               </div>
             ) : pdfStatus === 'failed' ? (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-red-600">
+                <div className="flex items-center gap-2 text-sm text-danger-600">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -441,140 +502,116 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                 {onRetryPdf && (
                   <button
                     onClick={onRetryPdf}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-navy-100 text-navy-700 rounded-lg hover:bg-navy-200 transition text-sm"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Retry PDF Generation
+                    Retry
                   </button>
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-sm text-gray-400">
+              <div className="flex items-center gap-2 text-sm text-navy-400">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 PDF report pending...
               </div>
             )}
-          </div>
+          </CollapsibleSection>
 
           {/* Pre-flight Issues */}
           {report.suites?.preflight && report.suites.preflight.recommendation !== 'proceed' && (
-            <div className="mb-6 pb-6 border-b">
-              <h3 className={`text-sm font-semibold mb-2 uppercase tracking-wide ${
-                report.suites.preflight.recommendation === 'block' ? 'text-red-800' : 'text-yellow-800'
-              }`}>
-                Pre-flight {report.suites.preflight.recommendation === 'block' ? 'Blocked' : 'Warnings'}
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">{report.suites.preflight.summary}</p>
-
-              {/* Security Issues */}
+            <CollapsibleSection
+              title={report.suites.preflight.recommendation === 'block' ? 'Pre-flight Blocked' : 'Pre-flight Warnings'}
+              icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+              defaultOpen={true}
+              badgeColor={report.suites.preflight.recommendation === 'block' ? 'bg-danger-100 text-danger-600' : 'bg-warning-100 text-warning-600'}
+            >
+              <p className="text-sm text-navy-600 mb-3">{report.suites.preflight.summary}</p>
               {(report.suites.preflight.securityIssues?.length ?? 0) > 0 && (
                 <div className="mb-2">
-                  <p className="text-xs font-medium text-gray-700 mb-1">Security Issues:</p>
+                  <p className="text-xs font-semibold text-navy-700 mb-1">Security Issues:</p>
                   <ul className="space-y-1">
                     {report.suites.preflight.securityIssues?.map((issue, i) => (
-                      <li key={i} className="text-xs text-red-600 flex items-start">
-                        <span className={`mr-1 px-1 rounded text-white text-[10px] ${
-                          issue.severity === 'critical' ? 'bg-red-600' :
-                          issue.severity === 'high' ? 'bg-orange-500' : 'bg-yellow-500'
+                      <li key={i} className="text-xs text-danger-600 flex items-start gap-1">
+                        <span className={`px-1.5 py-0.5 rounded text-white text-[10px] font-medium ${
+                          issue.severity === 'critical' ? 'bg-danger-600' :
+                          issue.severity === 'high' ? 'bg-warning-600' : 'bg-warning-500'
                         }`}>{issue.severity}</span>
-                        {issue.description}
+                        <span>{issue.description}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-
-              {/* Integrity Concerns */}
-              {(report.suites.preflight.cheatingIndicators?.length ?? 0) > 0 && (
-                <div className="mb-2">
-                  <p className="text-xs font-medium text-gray-700 mb-1">Integrity Concerns:</p>
-                  <ul className="space-y-1">
-                    {report.suites.preflight.cheatingIndicators?.map((indicator, i) => (
-                      <li key={i} className="text-xs text-yellow-700 flex items-start flex-wrap">
-                        <span className={`mr-1 px-1 rounded text-white text-[10px] ${
-                          indicator.severity === 'critical' ? 'bg-red-600' :
-                          indicator.severity === 'high' ? 'bg-orange-500' : 'bg-yellow-500'
-                        }`}>{indicator.severity}</span>
-                        {indicator.description}
-                        {indicator.evidence && (
-                          <span className="text-gray-500 ml-1">({indicator.evidence})</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* AI Analysis */}
-              {report.suites.preflight.aiAnalysis?.explanation && (
-                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
-                  <span className="font-medium">AI Assessment: </span>
-                  {report.suites.preflight.aiAnalysis.explanation}
-                </div>
-              )}
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* Critical Issues */}
           {((report.criticalIssues?.length ?? 0) > 0 || (report.criticalFailures?.length ?? 0) > 0) && (
-            <div className="mb-6 pb-6 border-b">
-              <h3 className="text-sm font-semibold text-orange-800 mb-2 uppercase tracking-wide">
-                Critical Issues
-              </h3>
-              <ul className="space-y-1">
+            <CollapsibleSection
+              title="Critical Issues"
+              icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+              defaultOpen={true}
+              badge={(report.criticalIssues ?? report.criticalFailures ?? []).length}
+              badgeColor="bg-danger-100 text-danger-600"
+            >
+              <ul className="space-y-2">
                 {(report.criticalIssues ?? report.criticalFailures ?? []).map((issue, i) => (
-                  <li key={i} className="text-sm text-orange-700 flex items-start">
-                    <span className="mr-2">⚠</span>
+                  <li key={i} className="text-sm text-danger-700 flex items-start gap-2 bg-danger-50 rounded-lg p-2">
+                    <span className="text-danger-500 mt-0.5">⚠</span>
                     {issue}
                   </li>
                 ))}
               </ul>
-            </div>
+            </CollapsibleSection>
           )}
 
-          {/* Quick Summary */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-green-800 mb-2 uppercase tracking-wide">
-                Strengths ({report.summary?.strengths?.length ?? 0})
-              </h3>
-              <ul className="space-y-1">
-                {(report.summary?.strengths ?? []).slice(0, 4).map((item, i) => (
-                  <li key={i} className="text-sm text-gray-600 flex items-start">
-                    <span className="text-green-500 mr-2">✓</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Strengths & Concerns */}
+          <CollapsibleSection
+            title="Strengths"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+            defaultOpen={false}
+            badge={report.summary?.strengths?.length ?? 0}
+            badgeColor="bg-success-100 text-success-600"
+          >
+            <ul className="space-y-1.5">
+              {(report.summary?.strengths ?? []).slice(0, 6).map((item, i) => (
+                <li key={i} className="text-sm text-navy-600 flex items-start gap-2">
+                  <span className="text-success-500 mt-0.5">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </CollapsibleSection>
 
-            <div>
-              <h3 className="text-sm font-semibold text-yellow-800 mb-2 uppercase tracking-wide">
-                Concerns ({report.summary?.concerns?.length ?? 0})
-              </h3>
-              <ul className="space-y-1">
-                {(report.summary?.concerns ?? []).slice(0, 4).map((item, i) => (
-                  <li key={i} className="text-sm text-gray-600 flex items-start">
-                    <span className="text-yellow-500 mr-2">!</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          <CollapsibleSection
+            title="Concerns"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
+            defaultOpen={false}
+            badge={report.summary?.concerns?.length ?? 0}
+            badgeColor="bg-warning-100 text-warning-600"
+          >
+            <ul className="space-y-1.5">
+              {(report.summary?.concerns ?? []).slice(0, 6).map((item, i) => (
+                <li key={i} className="text-sm text-navy-600 flex items-start gap-2">
+                  <span className="text-warning-500 mt-0.5">!</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </CollapsibleSection>
         </div>
       </div>
 
       {/* Right Column - Score Details */}
-      <div className="flex-1 flex flex-col bg-gray-50">
-        <div className="flex-1 overflow-y-auto p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Score Breakdown</h2>
+      <div className="flex-1 flex flex-col bg-navy-50/50 overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-5 lg:p-6">
+          <h2 className="text-lg font-semibold text-navy-900 mb-5">Score Breakdown</h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {hasRubric ? (
               // New rubric-based scoring (90 points total)
               Object.entries(report.scores.rubric!)
@@ -585,28 +622,31 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                   const safeValue = Math.max(0, value || 0);
                   const maxScore = rubricInfo.max;
                   const percentage = Math.round((safeValue / maxScore) * 100);
-                  const gradeLabel = percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Needs Improvement' : 'Poor';
-                  const gradeColor = percentage >= 80 ? 'text-green-600' : percentage >= 60 ? 'text-yellow-600' : 'text-red-600';
+                  const gradeLabel = percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Fair' : 'Needs Work';
+                  const gradeColor = percentage >= 80 ? 'text-success-600 bg-success-50' : percentage >= 60 ? 'text-warning-600 bg-warning-50' : 'text-danger-600 bg-danger-50';
                   return (
-                    <div key={key} className="bg-white rounded-lg shadow-sm p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-800">
-                          {rubricInfo.label}
-                        </span>
-                        <span className={`text-2xl font-bold ${getScoreColor(safeValue, maxScore)}`}>
-                          {safeValue}/{maxScore}
+                    <div key={key} className="glass rounded-xl shadow-md p-4 border border-navy-100 hover:shadow-lg transition">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{rubricInfo.icon}</span>
+                          <span className="font-semibold text-navy-800 text-sm">
+                            {rubricInfo.label}
+                          </span>
+                        </div>
+                        <span className={`text-2xl font-bold font-mono ${getScoreColor(safeValue, maxScore)}`}>
+                          {safeValue}<span className="text-sm text-navy-400">/{maxScore}</span>
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full mb-2">
+                      <div className="h-2 bg-navy-200 rounded-full mb-3 overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${getScoreBg(safeValue, maxScore)}`}
+                          className={`h-full rounded-full transition-all duration-500 ${getScoreBg(safeValue, maxScore)}`}
                           style={{ width: `${Math.min(100, percentage)}%` }}
                         />
                       </div>
                       <div className="mb-2">
-                        <span className={`text-xs font-semibold ${gradeColor}`}>{gradeLabel}</span>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${gradeColor}`}>{gradeLabel}</span>
                       </div>
-                      <p className="text-xs text-gray-600 leading-relaxed">
+                      <p className="text-xs text-navy-600 leading-relaxed">
                         {getRubricAssessment(key)}
                       </p>
                     </div>
@@ -619,27 +659,27 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
                 .map(([key, value]) => {
                   const attributionBadge = getAttributionBadge(key);
                   return (
-                    <div key={key} className="bg-white rounded-lg shadow-sm p-4">
+                    <div key={key} className="glass rounded-xl shadow-md p-4 border border-navy-100">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-800">
+                        <span className="font-semibold text-navy-800">
                           {scoreLabels[key] || key}
                         </span>
-                        <span className={`text-2xl font-bold ${getScoreColor(value as number)}`}>
+                        <span className={`text-2xl font-bold font-mono ${getScoreColor(value as number)}`}>
                           {value as number}
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full mb-3">
+                      <div className="h-2 bg-navy-200 rounded-full mb-3">
                         <div
                           className={`h-full rounded-full ${getScoreBg(value as number)}`}
                           style={{ width: `${value}%` }}
                         />
                       </div>
                       {attributionBadge && (
-                        <div className="mb-2 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                        <div className="mb-2 px-2 py-1 bg-warning-50 border border-warning-200 rounded text-xs text-warning-700">
                           {attributionBadge}
                         </div>
                       )}
-                      <p className="text-xs text-gray-500 leading-relaxed">
+                      <p className="text-xs text-navy-500 leading-relaxed">
                         {getScoreExplanation(key)}
                       </p>
                     </div>
@@ -649,23 +689,25 @@ export function EvaluationReport({ report, pdfStatus, pdfUrl, onRetryPdf, onOpen
           </div>
 
           {/* Recommendations */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Recommendations</h3>
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <ul className="space-y-2">
-                {(report.summary?.recommendations ?? []).map((item, i) => (
-                  <li key={i} className="text-sm text-gray-700 flex items-start">
-                    <span className="text-blue-500 mr-2 mt-0.5">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+          {(report.summary?.recommendations?.length ?? 0) > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-navy-900 mb-3">Recommendations</h3>
+              <div className="glass rounded-xl shadow-md p-4 border border-navy-100">
+                <ul className="space-y-2.5">
+                  {(report.summary?.recommendations ?? []).map((item, i) => (
+                    <li key={i} className="text-sm text-navy-700 flex items-start gap-3">
+                      <span className="text-gold-500 mt-0.5 flex-shrink-0">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
