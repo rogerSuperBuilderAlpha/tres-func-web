@@ -95,6 +95,8 @@ export default function Home() {
             report: data.report,
             pdfStatus: data.pdfStatus,
             pdfUrl: data.pdfUrl,
+            manualReview: data.manualReview,
+            manualReviewedAt: data.manualReviewedAt,
           });
           if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
           return;
@@ -162,6 +164,8 @@ export default function Home() {
           report: data.report,
           pdfStatus: data.pdfStatus,
           pdfUrl: data.pdfUrl,
+          manualReview: data.manualReview,
+          manualReviewedAt: data.manualReviewedAt,
         });
         if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
       } else if (data.status === 'FAILED') {
@@ -294,6 +298,8 @@ export default function Home() {
             pdfStatus={evaluation.pdfStatus}
             pdfUrl={evaluation.pdfUrl}
             onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
+            manualReview={evaluation.manualReview}
+            manualReviewedAt={evaluation.manualReviewedAt}
           />
         ) : null}
       </div>
@@ -304,6 +310,10 @@ export default function Home() {
           isOpen={showManualReview}
           onClose={() => setShowManualReview(false)}
           evaluationId={evaluation.evaluationId}
+          onReviewSaved={() => {
+            // Refresh evaluation data to show the new manual review
+            handleSelectEvaluation(evaluation.evaluationId);
+          }}
         />
       )}
     </main>

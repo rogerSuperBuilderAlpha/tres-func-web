@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { EvaluationReportData } from '@/types';
-import { getScoreTierGradient, getScoreColor, getScoreBg, getGradeLabel } from '@/lib/utils';
+import type { EvaluationReportData, ManualReview } from '@/types';
+import { getScoreTierGradient, getScoreColor, getScoreBg, getGradeLabel, formatDate } from '@/lib/utils';
 import { Spinner } from '@/components/ui';
 
 interface EvaluationReportProps {
@@ -11,7 +11,29 @@ interface EvaluationReportProps {
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
   pdfUrl?: string;
   onRetryPdf?: () => void;
+  manualReview?: ManualReview;
+  manualReviewedAt?: string;
 }
+
+// Checklist label mapping
+const CHECKLIST_LABELS: Record<string, string> = {
+  code_review: 'Reviewed code structure and organization',
+  readme_check: 'Verified README has clear setup instructions',
+  manual_test: 'Manually tested the deployed application',
+  edge_cases: 'Tested edge cases not covered by automation',
+  security_check: 'Checked for obvious security issues',
+  ui_ux: 'Assessed UI/UX quality and responsiveness',
+  error_handling: 'Verified error handling behavior',
+  score_fair: 'Confirmed automated scores seem fair',
+};
+
+// Answer question labels
+const ANSWER_LABELS: Record<string, string> = {
+  strengths: 'Notable Strengths',
+  concerns: 'Concerns Found',
+  recommendation: 'Overall Assessment',
+  notes: 'Additional Notes',
+};
 
 // Clean accordion item
 function AccordionItem({ 
@@ -118,7 +140,7 @@ export function PdfStatusButton({
   );
 }
 
-export function EvaluationReport({ report }: EvaluationReportProps) {
+export function EvaluationReport({ report, manualReview, manualReviewedAt }: EvaluationReportProps) {
   const hasRubric = !!report.scores?.rubric;
   const overallScore = report.scores?.rubric?.overall ?? report.scores?.overall ?? 0;
   const maxScore = hasRubric ? 90 : 100;
@@ -332,6 +354,53 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
               </AccordionItem>
             </div>
           </div>
+
+          {/* Manual Review Section */}
+          {manualReview && (
+            <div className="bg-gradient-to-br from-gold-50 to-gold-100/50 rounded-xl border border-gold-200 p-5 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-navy-800 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-gold-200 flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 text-gold-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                  </span>
+                  Manual Review
+                </h3>
+                {manualReviewedAt && (
+                  <span className="text-xs text-navy-500">{formatDate(manualReviewedAt)}</span>
+                )}
+              </div>
+
+              {/* Checklist items completed */}
+              {manualReview.checklist && manualReview.checklist.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-navy-500 mb-2">Completed Checks ({manualReview.checklist.length}/8)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {manualReview.checklist.map((id) => (
+                      <span key={id} className="text-xs bg-white/60 text-navy-600 px-2 py-1 rounded-md border border-gold-200">
+                        {CHECKLIST_LABELS[id] || id}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Review answers */}
+              {manualReview.answers && Object.keys(manualReview.answers).length > 0 && (
+                <div className="space-y-3">
+                  {Object.entries(manualReview.answers)
+                    .filter(([, value]) => value && value.trim())
+                    .map(([key, value]) => (
+                      <div key={key} className="bg-white/50 rounded-lg p-3 border border-gold-200/50">
+                        <p className="text-xs font-medium text-navy-500 mb-1">{ANSWER_LABELS[key] || key}</p>
+                        <p className="text-sm text-navy-700">{value}</p>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
