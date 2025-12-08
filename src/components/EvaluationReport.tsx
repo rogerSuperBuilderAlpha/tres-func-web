@@ -532,7 +532,13 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
                       </span>
                     </div>
                     <div className="h-2 bg-navy-100 rounded-full mb-4 overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-500 ${getScoreBg(safeValue, rubricInfo.max)}`} style={{ width: `${Math.min(100, percentage)}%` }} />
+                      <div 
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${Math.min(100, percentage)}%`,
+                          backgroundColor: percentage >= 80 ? '#10b981' : percentage >= 60 ? '#f59e0b' : '#f43f5e'
+                        }} 
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${grade.color}`}>{grade.label}</span>
