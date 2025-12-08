@@ -132,24 +132,6 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
               )}
             </div>
 
-            {/* Methodology note */}
-            <div className="bg-navy-50 border border-navy-100 rounded-xl p-4">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0">
-                  <svg className="w-5 h-5 text-navy-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-navy-700 mb-0.5">About deployment methodology</p>
-                  <p className="text-xs text-navy-600">
-                    Whether you use a monorepo, separate repos, or serverless architecture does not affect our evaluation.
-                    We focus on how you solve the problem, not your deployment choices.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             <button
               type="submit"
               disabled={!canSubmit}
