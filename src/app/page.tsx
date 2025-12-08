@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { SubmissionForm } from '@/components/SubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
-import { EvaluationReport } from '@/components/EvaluationReport';
+import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
 import { EvaluationHistory } from '@/components/EvaluationHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
 import type { Evaluation, EvaluationReportData } from '@/types';
@@ -22,7 +22,6 @@ export default function Home() {
 
   // Poll for PDF status after evaluation completes
   const pollPdfStatus = useCallback((evaluationId: string) => {
-    // Clear any existing poll
     if (pdfPollRef.current) {
       clearTimeout(pdfPollRef.current);
     }
@@ -38,7 +37,6 @@ export default function Home() {
             pdfUrl: data.pdfUrl,
           } : null);
 
-          // Keep polling if pending or generating
           if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
             pdfPollRef.current = setTimeout(poll, 3000);
           }
@@ -48,7 +46,6 @@ export default function Home() {
       }
     };
 
-    // Start polling
     pdfPollRef.current = setTimeout(poll, 2000);
   }, []);
 
@@ -58,26 +55,22 @@ export default function Home() {
     setEvaluation(null);
 
     try {
-      console.log('Submitting evaluation request...');
       const response = await fetch(`${API_BASE}/evaluate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repoUrl, deployedUrl, backendRepoUrl }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || `API error: ${response.status} ${response.statusText}`);
+        throw new Error(data.error || data.message || `API error: ${response.status}`);
       }
 
       if (!data.evaluationId) {
         throw new Error('Invalid response: missing evaluationId');
       }
 
-      console.log('Evaluation started:', data.evaluationId);
       setEvaluation({
         evaluationId: data.evaluationId,
         status: 'PROCESSING',
@@ -85,10 +78,8 @@ export default function Home() {
         startTime: new Date().toISOString(),
       });
 
-      // Start polling for status
       pollStatus(data.evaluationId);
     } catch (err) {
-      console.error('Submit error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to submit evaluation';
       setError(errorMessage);
       setEvaluation(null);
@@ -98,13 +89,12 @@ export default function Home() {
   };
 
   const pollStatus = useCallback(async (evaluationId: string) => {
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    const maxAttempts = 60;
     let attempts = 0;
     let consecutiveErrors = 0;
 
     const poll = async () => {
       attempts++;
-      console.log(`Polling status attempt ${attempts}/${maxAttempts}`);
 
       try {
         const response = await fetch(`${API_BASE}/status/${evaluationId}`);
@@ -114,9 +104,8 @@ export default function Home() {
         }
 
         const data = await response.json();
-        consecutiveErrors = 0; // Reset on success
+        consecutiveErrors = 0;
 
-        // Update progress from API
         setEvaluation(prev => prev ? {
           ...prev,
           progress: data.progress,
@@ -125,7 +114,6 @@ export default function Home() {
         } : null);
 
         if (data.status === 'COMPLETED' && data.report) {
-          console.log('Evaluation completed');
           setEvaluation({
             evaluationId,
             status: 'COMPLETED',
@@ -134,7 +122,6 @@ export default function Home() {
             pdfStatus: data.pdfStatus,
             pdfUrl: data.pdfUrl,
           });
-          // Start PDF polling if not ready yet
           if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
             pollPdfStatus(evaluationId);
           }
@@ -142,34 +129,24 @@ export default function Home() {
         }
 
         if (data.status === 'FAILED') {
-          console.log('Evaluation failed:', data.error);
-          setEvaluation({
-            evaluationId,
-            status: 'FAILED',
-            error: data.error,
-          });
-          setError(data.error || 'Evaluation failed. The repository may be private or inaccessible.');
+          setEvaluation({ evaluationId, status: 'FAILED', error: data.error });
+          setError(data.error || 'Evaluation failed.');
           return;
         }
 
-        // Still processing
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
         } else {
-          setError('Evaluation timed out after 5 minutes. The evaluation may still be running - check back later.');
+          setError('Evaluation timed out after 5 minutes.');
           setEvaluation(prev => prev ? { ...prev, status: 'FAILED' } : null);
         }
       } catch (err) {
-        console.error('Poll error:', err);
         consecutiveErrors++;
-
         if (consecutiveErrors >= 3) {
-          setError(`Failed to check status after ${consecutiveErrors} attempts. Please refresh and try again.`);
+          setError(`Failed to check status. Please refresh.`);
           setEvaluation(prev => prev ? { ...prev, status: 'FAILED' } : null);
           return;
         }
-
-        // Retry with backoff
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000 * consecutiveErrors);
         }
@@ -185,56 +162,33 @@ export default function Home() {
   };
 
   const handleRetryPdf = async (evaluationId: string) => {
-    // Update local state to show generating
     setEvaluation(prev => prev ? { ...prev, pdfStatus: 'generating' } : null);
 
     try {
-      const response = await fetch(`${API_BASE}/retry-pdf/${evaluationId}`, {
-        method: 'POST',
-      });
+      const response = await fetch(`${API_BASE}/retry-pdf/${evaluationId}`, { method: 'POST' });
+      if (!response.ok) throw new Error('Failed to retry PDF generation');
 
-      if (!response.ok) {
-        throw new Error('Failed to retry PDF generation');
-      }
-
-      // Start polling for PDF status
-      const pollPdfStatus = async () => {
+      const pollPdf = async () => {
         const statusResponse = await fetch(`${API_BASE}/status/${evaluationId}`);
         if (statusResponse.ok) {
           const data = await statusResponse.json();
-          setEvaluation(prev => prev ? {
-            ...prev,
-            pdfStatus: data.pdfStatus,
-            pdfUrl: data.pdfUrl,
-          } : null);
-
-          // Keep polling if still generating
-          if (data.pdfStatus === 'generating') {
-            setTimeout(pollPdfStatus, 3000);
-          }
+          setEvaluation(prev => prev ? { ...prev, pdfStatus: data.pdfStatus, pdfUrl: data.pdfUrl } : null);
+          if (data.pdfStatus === 'generating') setTimeout(pollPdf, 3000);
         }
       };
-
-      // Start polling after a short delay
-      setTimeout(pollPdfStatus, 2000);
+      setTimeout(pollPdf, 2000);
     } catch (err) {
-      console.error('Failed to retry PDF:', err);
       setEvaluation(prev => prev ? { ...prev, pdfStatus: 'failed' } : null);
     }
   };
 
   const handleSelectEvaluation = async (evaluationId: string) => {
     setError(null);
-    setEvaluation({
-      evaluationId,
-      status: 'PROCESSING',
-    });
+    setEvaluation({ evaluationId, status: 'PROCESSING' });
 
     try {
       const response = await fetch(`${API_BASE}/status/${evaluationId}`);
-      if (!response.ok) {
-        throw new Error('Failed to load evaluation');
-      }
+      if (!response.ok) throw new Error('Failed to load evaluation');
       const data = await response.json();
 
       if (data.status === 'COMPLETED' && data.report) {
@@ -246,7 +200,6 @@ export default function Home() {
           pdfStatus: data.pdfStatus,
           pdfUrl: data.pdfUrl,
         });
-        // Start PDF polling if not ready yet
         if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
           pollPdfStatus(evaluationId);
         }
@@ -254,11 +207,9 @@ export default function Home() {
         setError(data.error || 'This evaluation failed');
         setEvaluation(null);
       } else {
-        // Still processing - start polling
         pollStatus(evaluationId);
       }
     } catch (err) {
-      console.error('Failed to load evaluation:', err);
       setError(err instanceof Error ? err.message : 'Failed to load evaluation');
       setEvaluation(null);
     }
@@ -266,52 +217,66 @@ export default function Home() {
 
   return (
     <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern">
-      {/* Header - fixed height */}
+      {/* Header */}
       <header className="flex-shrink-0 glass border-b border-navy-200/50">
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {/* Logo */}
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-navy-700 to-navy-900 shadow-lg">
-                <svg className="w-6 h-6 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-navy-700 to-navy-900 shadow-lg">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-navy-900 tracking-tight">
+                <h1 className="text-lg sm:text-xl font-semibold text-navy-900 tracking-tight">
                   TTB Evaluator
                 </h1>
-                <p className="text-sm text-navy-500">
+                <p className="text-xs sm:text-sm text-navy-500 hidden sm:block">
                   Automated candidate assessment
                 </p>
               </div>
             </div>
-            {evaluation && (
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 text-sm bg-navy-100 text-navy-700 rounded-lg hover:bg-navy-200 transition font-medium"
-              >
-                ← New Evaluation
-              </button>
-            )}
+            
+            {/* Header actions */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* PDF Button - only show when evaluation is complete */}
+              {evaluation?.status === 'COMPLETED' && (
+                <PdfStatusButton
+                  pdfStatus={evaluation.pdfStatus}
+                  pdfUrl={evaluation.pdfUrl}
+                  onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
+                />
+              )}
+              
+              {evaluation && (
+                <button
+                  onClick={handleReset}
+                  className="px-3 sm:px-4 py-2 text-sm bg-navy-100 text-navy-700 rounded-lg hover:bg-navy-200 transition font-medium"
+                >
+                  <span className="hidden sm:inline">← New Evaluation</span>
+                  <span className="sm:hidden">← New</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Error banner */}
       {error && (
-        <div className="flex-shrink-0 bg-danger-50 border-b border-danger-200 px-6 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 text-danger-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="flex-shrink-0 bg-danger-50 border-b border-danger-200 px-4 sm:px-6 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center min-w-0">
+              <svg className="w-5 h-5 text-danger-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-danger-700">{error}</span>
+              <span className="text-danger-700 text-sm truncate">{error}</span>
             </div>
             {evaluation?.status === 'FAILED' && (
               <button
                 onClick={handleReset}
-                className="px-3 py-1 text-sm bg-danger-600 text-white rounded hover:bg-danger-500 transition"
+                className="px-3 py-1 text-sm bg-danger-600 text-white rounded hover:bg-danger-500 transition flex-shrink-0"
               >
                 Try Again
               </button>
@@ -320,24 +285,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Main content - fills remaining space */}
+      {/* Main content */}
       <div className="flex-1 overflow-hidden">
         {!evaluation ? (
-          <div className="h-full overflow-y-auto p-6">
+          <div className="h-full overflow-y-auto p-4 sm:p-6">
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="flex flex-col justify-center">
                 <SubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
               </div>
               <div>
-                <EvaluationHistory
-                  apiBase={API_BASE}
-                  onSelectEvaluation={handleSelectEvaluation}
-                />
+                <EvaluationHistory apiBase={API_BASE} onSelectEvaluation={handleSelectEvaluation} />
               </div>
             </div>
           </div>
         ) : evaluation.status === 'PROCESSING' ? (
-          <div className="h-full flex items-center justify-center p-6">
+          <div className="h-full flex items-center justify-center p-4 sm:p-6">
             <EvaluationStatus
               evaluationId={evaluation.evaluationId}
               progress={evaluation.progress}
