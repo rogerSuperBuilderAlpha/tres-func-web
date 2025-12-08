@@ -41,6 +41,7 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
     CHECKLIST_ITEMS.map(item => ({ ...item, checked: false }))
   );
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [reviewerName, setReviewerName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,9 +62,13 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
         checklist: checklist.filter(item => item.checked).map(item => item.id),
         answers,
         reviewedAt: new Date().toISOString(),
-        reviewerNotes: answers.notes,
+        reviewerName: reviewerName.trim() || 'Reviewer',
       });
       onReviewSaved?.();
+      // Reset form
+      setChecklist(CHECKLIST_ITEMS.map(item => ({ ...item, checked: false })));
+      setAnswers({});
+      setReviewerName('');
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save review');
@@ -116,6 +121,18 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
 
           {/* Content */}
           <div className="overflow-y-auto p-6 space-y-6" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+            {/* Reviewer Name */}
+            <div>
+              <label className="block text-sm font-medium text-navy-700 mb-1.5">Your Name</label>
+              <input
+                type="text"
+                value={reviewerName}
+                onChange={(e) => setReviewerName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 text-sm text-navy-900 placeholder:text-navy-400"
+              />
+            </div>
+
             {/* Checklist */}
             <div>
               <div className="flex items-center justify-between mb-3">

@@ -70,8 +70,7 @@ export interface Evaluation {
   detailedProgress?: DetailedProgress[];
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
   pdfUrl?: string;
-  manualReview?: ManualReview;
-  manualReviewedAt?: string;
+  manualReviews?: ManualReview[];
 }
 
 export interface EvaluationSummary {
@@ -311,7 +310,9 @@ export interface DeploymentTestResult {
 
 // Manual review types
 export interface ManualReview {
+  id: string;
   checklist: string[];
   answers: Record<string, string>;
-  reviewerNotes?: string;
+  reviewerName?: string;
+  reviewedAt: string;
 }

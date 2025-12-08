@@ -95,8 +95,7 @@ export default function Home() {
             report: data.report,
             pdfStatus: data.pdfStatus,
             pdfUrl: data.pdfUrl,
-            manualReview: data.manualReview,
-            manualReviewedAt: data.manualReviewedAt,
+            manualReviews: data.manualReviews,
           });
           if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
           return;
@@ -164,8 +163,7 @@ export default function Home() {
           report: data.report,
           pdfStatus: data.pdfStatus,
           pdfUrl: data.pdfUrl,
-          manualReview: data.manualReview,
-          manualReviewedAt: data.manualReviewedAt,
+          manualReviews: data.manualReviews,
         });
         if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
       } else if (data.status === 'FAILED') {
@@ -298,8 +296,7 @@ export default function Home() {
             pdfStatus={evaluation.pdfStatus}
             pdfUrl={evaluation.pdfUrl}
             onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
-            manualReview={evaluation.manualReview}
-            manualReviewedAt={evaluation.manualReviewedAt}
+            manualReviews={evaluation.manualReviews}
           />
         ) : null}
       </div>

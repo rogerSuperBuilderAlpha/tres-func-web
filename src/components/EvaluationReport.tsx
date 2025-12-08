@@ -11,12 +11,23 @@ interface EvaluationReportProps {
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
   pdfUrl?: string;
   onRetryPdf?: () => void;
-  manualReview?: ManualReview;
-  manualReviewedAt?: string;
+  manualReviews?: ManualReview[];
 }
 
 // Checklist label mapping
 const CHECKLIST_LABELS: Record<string, string> = {
+  code_review: 'Code Review',
+  readme_check: 'README Check',
+  manual_test: 'Manual Test',
+  edge_cases: 'Edge Cases',
+  security_check: 'Security',
+  ui_ux: 'UI/UX',
+  error_handling: 'Error Handling',
+  score_fair: 'Score Verified',
+};
+
+// Full checklist labels for modal
+const CHECKLIST_FULL_LABELS: Record<string, string> = {
   code_review: 'Reviewed code structure and organization',
   readme_check: 'Verified README has clear setup instructions',
   manual_test: 'Manually tested the deployed application',
@@ -34,6 +45,104 @@ const ANSWER_LABELS: Record<string, string> = {
   recommendation: 'Overall Assessment',
   notes: 'Additional Notes',
 };
+
+// Review detail modal
+function ReviewDetailModal({ review, onClose }: { review: ManualReview; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-navy-950/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div className="relative glass rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-navy-200">
+          {/* Header */}
+          <div className="sticky top-0 glass border-b border-navy-200 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-navy-900">Manual Review</h2>
+                <p className="text-sm text-navy-500">by {review.reviewerName || 'Reviewer'} • {formatDate(review.reviewedAt)}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 text-navy-400 hover:text-navy-600 hover:bg-navy-100 rounded-lg transition">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="overflow-y-auto p-6 space-y-6" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+            {/* Checklist */}
+            <div>
+              <h3 className="font-semibold text-navy-900 mb-3">Completed Checks ({review.checklist.length}/8)</h3>
+              <div className="bg-navy-50 rounded-xl p-4 space-y-2">
+                {review.checklist.map(id => (
+                  <div key={id} className="flex items-center gap-2 text-sm text-navy-700">
+                    <svg className="w-4 h-4 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {CHECKLIST_FULL_LABELS[id] || id}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Answers */}
+            {Object.entries(review.answers)
+              .filter(([, value]) => value && value.trim())
+              .map(([key, value]) => (
+                <div key={key}>
+                  <h3 className="font-semibold text-navy-900 mb-2">{ANSWER_LABELS[key] || key}</h3>
+                  <div className="bg-white rounded-xl border border-navy-200 p-4">
+                    <p className="text-sm text-navy-700 whitespace-pre-wrap">{value}</p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Review card component
+function ReviewCard({ review, onClick }: { review: ManualReview; onClick: () => void }) {
+  const assessmentPreview = review.answers.recommendation || review.answers.strengths || review.answers.notes || '';
+  const truncated = assessmentPreview.length > 80 ? assessmentPreview.slice(0, 80) + '...' : assessmentPreview;
+  
+  return (
+    <button
+      onClick={onClick}
+      className="bg-white rounded-xl border border-navy-200 p-4 text-left hover:shadow-md hover:border-gold-300 transition group"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold text-navy-800">{review.reviewerName || 'Reviewer'}</span>
+        <span className="text-xs text-navy-400">{formatDate(review.reviewedAt).split(',')[0]}</span>
+      </div>
+      <p className="text-xs text-navy-600 mb-3 line-clamp-2">{truncated || 'No notes'}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1 flex-wrap">
+          {review.checklist.slice(0, 3).map(id => (
+            <span key={id} className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded">
+              {CHECKLIST_LABELS[id] || id}
+            </span>
+          ))}
+          {review.checklist.length > 3 && (
+            <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded">
+              +{review.checklist.length - 3}
+            </span>
+          )}
+        </div>
+        <svg className="w-4 h-4 text-navy-300 group-hover:text-gold-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </button>
+  );
+}
 
 // Clean accordion item
 function AccordionItem({ 
@@ -140,7 +249,8 @@ export function PdfStatusButton({
   );
 }
 
-export function EvaluationReport({ report, manualReview, manualReviewedAt }: EvaluationReportProps) {
+export function EvaluationReport({ report, manualReviews = [] }: EvaluationReportProps) {
+  const [selectedReview, setSelectedReview] = useState<ManualReview | null>(null);
   const hasRubric = !!report.scores?.rubric;
   const overallScore = report.scores?.rubric?.overall ?? report.scores?.overall ?? 0;
   const maxScore = hasRubric ? 90 : 100;
@@ -355,58 +465,41 @@ export function EvaluationReport({ report, manualReview, manualReviewedAt }: Eva
             </div>
           </div>
 
-          {/* Manual Review Section */}
-          {manualReview && (
-            <div className="bg-gradient-to-br from-gold-50 to-gold-100/50 rounded-xl border border-gold-200 p-5 mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-navy-800 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-gold-200 flex items-center justify-center">
-                    <svg className="w-3.5 h-3.5 text-gold-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                  </span>
-                  Manual Review
-                </h3>
-                {manualReviewedAt && (
-                  <span className="text-xs text-navy-500">{formatDate(manualReviewedAt)}</span>
-                )}
-              </div>
-
-              {/* Checklist items completed */}
-              {manualReview.checklist && manualReview.checklist.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-medium text-navy-500 mb-2">Completed Checks ({manualReview.checklist.length}/8)</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {manualReview.checklist.map((id) => (
-                      <span key={id} className="text-xs bg-white/60 text-navy-600 px-2 py-1 rounded-md border border-gold-200">
-                        {CHECKLIST_LABELS[id] || id}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Review answers */}
-              {manualReview.answers && Object.keys(manualReview.answers).length > 0 && (
-                <div className="space-y-3">
-                  {Object.entries(manualReview.answers)
-                    .filter(([, value]) => value && value.trim())
-                    .map(([key, value]) => (
-                      <div key={key} className="bg-white/50 rounded-lg p-3 border border-gold-200/50">
-                        <p className="text-xs font-medium text-navy-500 mb-1">{ANSWER_LABELS[key] || key}</p>
-                        <p className="text-sm text-navy-700">{value}</p>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Review Detail Modal */}
+      {selectedReview && (
+        <ReviewDetailModal review={selectedReview} onClose={() => setSelectedReview(null)} />
+      )}
 
       {/* Right Column - Score Breakdown */}
       <div className="flex-1 flex flex-col bg-navy-50/30 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+          {/* Manual Reviews Section */}
+          {manualReviews.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-navy-900 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                  </span>
+                  Manual Reviews
+                </h2>
+                <span className="text-sm text-navy-500 bg-navy-100 px-2.5 py-1 rounded-full font-medium">
+                  {manualReviews.length} review{manualReviews.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {manualReviews.map((review) => (
+                  <ReviewCard key={review.id} review={review} onClick={() => setSelectedReview(review)} />
+                ))}
+              </div>
+            </div>
+          )}
+
           <h2 className="text-xl font-semibold text-navy-900 mb-6">Score Breakdown</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
