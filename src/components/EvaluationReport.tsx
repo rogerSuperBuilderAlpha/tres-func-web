@@ -277,13 +277,27 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
   const getRubricAssessment = (rubricKey: string): string => {
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
     if (!suites) return 'Assessment data not available';
+    
+    // Get the actual score for context
+    const rubric = report.scores?.rubric as Record<string, number> | undefined;
+    const score = rubric?.[rubricKey] || 0;
+    const maxScore = rubricLabels[rubricKey]?.max || 20;
+    const percentage = Math.round((score / maxScore) * 100);
 
     for (const suiteKey of (rubricToSuiteMap[rubricKey] || [])) {
       const suite = suites[suiteKey];
       const aiAnalysis = suite?.aiAnalysis as { explanation?: string; keyFindings?: string[] } | undefined;
       if (aiAnalysis?.explanation) {
         const findings = aiAnalysis.keyFindings?.slice(0, 2) || [];
-        return findings.length > 0 ? `${aiAnalysis.explanation} ${findings.join('. ')}` : aiAnalysis.explanation;
+        let explanation = findings.length > 0 ? `${aiAnalysis.explanation} ${findings.join('. ')}` : aiAnalysis.explanation;
+        
+        // Add score context if AI explanation seems too positive for a low score
+        if (percentage < 60 && !explanation.toLowerCase().includes('issue') && !explanation.toLowerCase().includes('fail') && !explanation.toLowerCase().includes('crash')) {
+          const qualifier = percentage < 40 ? 'Significant room for improvement.' : 'Some areas need work.';
+          explanation = `${explanation} ${qualifier}`;
+        }
+        
+        return explanation;
       }
     }
 
@@ -292,7 +306,12 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
         const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
         if (!func) return 'Functional tests completed';
         const passed = [func.scenarioA_Match?.passed, func.scenarioB_BrandMismatch?.passed, func.scenarioC_AbvMismatch?.passed].filter(Boolean).length;
-        return passed === 3 ? 'All core verification scenarios pass.' : passed === 0 ? 'Core verification logic not working.' : `${passed}/3 scenarios passed.`;
+        const baseText = passed === 3 ? 'All core verification scenarios pass.' : passed === 0 ? 'Core verification logic not working.' : `${passed}/3 scenarios passed.`;
+        // Add context based on actual score
+        if (passed === 3 && percentage < 60) {
+          return `${baseText} Additional scoring factors (format tolerance, image handling, detailed feedback) need improvement.`;
+        }
+        return baseText;
       }
       case 'errorHandling': {
         const res = suites.resilience as Record<string, unknown> | undefined;
@@ -531,12 +550,13 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
                         {safeValue}<span className="text-sm text-navy-400">/{rubricInfo.max}</span>
                       </span>
                     </div>
-                    <div className="h-2 bg-navy-100 rounded-full mb-4 overflow-hidden">
+                    <div className="h-3 bg-navy-100 rounded-full mb-4 overflow-hidden relative">
                       <div 
-                        className="h-full rounded-full transition-all duration-500"
+                        className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out"
                         style={{ 
-                          width: `${Math.min(100, percentage)}%`,
-                          backgroundColor: percentage >= 80 ? '#10b981' : percentage >= 60 ? '#f59e0b' : '#f43f5e'
+                          width: `${percentage}%`,
+                          minWidth: percentage > 0 ? '8px' : '0',
+                          backgroundColor: percentage >= 80 ? '#10b981' : percentage >= 60 ? '#f59e0b' : '#ef4444'
                         }} 
                       />
                     </div>
