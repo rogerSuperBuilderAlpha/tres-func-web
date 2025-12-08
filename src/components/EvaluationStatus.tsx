@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import type { TestProgress, DetailedProgress } from '@/types';
-import { Spinner } from '@/components/ui';
+
+// Re-export types for backward compatibility
+export type { TestProgress, DetailedProgress } from '@/types';
 
 interface EvaluationStatusProps {
   evaluationId: string;
@@ -48,39 +50,45 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
 
   return (
     <div className="w-full max-w-4xl">
-      <div className="glass rounded-2xl shadow-xl p-6 border border-navy-100">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-lg">
-            <Spinner size="md" className="text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-navy-900">
-              Evaluation in Progress
-            </h2>
-            <p className="text-xs text-navy-400 font-mono">{evaluationId}</p>
-          </div>
-        </div>
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Evaluation in Progress
+        </h2>
 
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex gap-4">
           {/* Left side - Status info */}
           <div className="flex-1 space-y-4">
+            {/* Header with spinner */}
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Running comprehensive tests...</p>
+                <p className="text-xs text-gray-400 font-mono">{evaluationId}</p>
+              </div>
+            </div>
+
             {/* Timer and Progress */}
             <div className="flex items-center gap-6">
-              <div className="bg-navy-900 rounded-xl px-5 py-3 shadow-lg">
-                <div className="text-3xl font-mono font-bold text-gold-400 tabular-nums">
+              <div>
+                <div className="text-2xl font-mono font-bold text-gray-800">
                   {elapsedMinutes > 0 ? `${elapsedMinutes}:${remainingSeconds.toString().padStart(2, '0')}` : `0:${remainingSeconds.toString().padStart(2, '0')}`}
                 </div>
-                <p className="text-xs text-navy-400 text-center mt-1">Elapsed</p>
+                <p className="text-xs text-gray-500">Elapsed</p>
               </div>
               {progress && (
                 <div className="flex-1">
-                  <div className="flex justify-between text-sm text-navy-600 mb-2">
-                    <span className="font-medium">Progress</span>
-                    <span className="font-mono">{completedCount}/{totalTests}</span>
+                  <div className="flex justify-between text-xs text-gray-600 mb-1">
+                    <span>Progress</span>
+                    <span>{completedCount}/{totalTests}</span>
                   </div>
-                  <div className="w-full bg-navy-200 rounded-full h-3 overflow-hidden">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-gold-400 to-gold-500 h-3 rounded-full transition-all duration-500 ease-out"
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -88,15 +96,15 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
               )}
             </div>
 
-            <p className="text-sm text-navy-500">
-              Running comprehensive tests... typically takes 2-5 minutes.
+            <p className="text-xs text-gray-500">
+              Typically takes 2-5 minutes...
             </p>
           </div>
 
           {/* Right side - Test status list */}
-          <div className="w-full md:w-56 bg-navy-50 rounded-xl p-4">
-            <h3 className="font-semibold text-navy-800 mb-3 text-xs uppercase tracking-wider">Test Status</h3>
-            <div className="space-y-2">
+          <div className="w-56 bg-gray-50 rounded-lg p-4">
+            <h3 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Test Status</h3>
+            <div className="space-y-1.5">
               <StatusItem label="Pre-flight Check" status={progress?.preflight || 'pending'} />
               <StatusItem label="Repo Analysis" status={progress?.repoAnalysis || 'pending'} />
               <StatusItem label="Security" status={progress?.security || 'pending'} />
@@ -115,22 +123,22 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
 
         {/* Live activity log */}
         {detailedProgress && detailedProgress.length > 0 && (
-          <div className="mt-6 border-t border-navy-200 pt-5">
-            <h3 className="font-semibold text-navy-800 mb-3 text-xs uppercase tracking-wider">Live Activity</h3>
-            <div className="bg-navy-900 rounded-xl p-4 max-h-40 overflow-y-auto font-mono text-xs shadow-inner">
+          <div className="mt-4 border-t pt-4">
+            <h3 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Live Activity</h3>
+            <div className="bg-gray-900 rounded-lg p-3 max-h-32 overflow-y-auto font-mono text-xs">
               {detailedProgress.slice(0, 10).map((item, index) => (
-                <div key={`${item.timestamp}-${index}`} className="flex items-start gap-2 py-1">
+                <div key={`${item.timestamp}-${index}`} className="flex items-start gap-2 py-0.5">
                   <span className={`flex-shrink-0 ${
-                    item.stage === 'error' ? 'text-danger-400' :
-                    item.stage === 'complete' ? 'text-success-500' :
-                    'text-gold-400'
+                    item.stage === 'error' ? 'text-red-400' :
+                    item.stage === 'complete' ? 'text-green-400' :
+                    'text-blue-400'
                   }`}>
                     {item.stage === 'error' ? '✗' : item.stage === 'complete' ? '✓' : '→'}
                   </span>
-                  <span className="text-navy-400">[{item.testName}]</span>
-                  <span className="text-navy-200">{item.message}</span>
+                  <span className="text-gray-400">[{item.testName}]</span>
+                  <span className="text-gray-200">{item.message}</span>
                   {item.percentage !== undefined && (
-                    <span className="text-navy-500 ml-auto">{item.percentage}%</span>
+                    <span className="text-gray-500 ml-auto">{item.percentage}%</span>
                   )}
                 </div>
               ))}
@@ -144,40 +152,40 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
 
 function StatusItem({ label, status }: { label: string; status: 'pending' | 'running' | 'complete' | 'failed' | 'warning' }) {
   return (
-    <div className="flex items-center space-x-2.5">
+    <div className="flex items-center space-x-2">
       {status === 'pending' && (
-        <div className="w-4 h-4 rounded-full border-2 border-navy-300 flex-shrink-0" />
+        <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300" />
       )}
       {status === 'running' && (
-        <div className="w-4 h-4 rounded-full border-2 border-gold-500 border-t-transparent animate-spin flex-shrink-0" />
+        <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
       )}
       {status === 'complete' && (
-        <div className="w-4 h-4 rounded-full bg-success-500 flex items-center justify-center flex-shrink-0">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-3.5 h-3.5 rounded-full bg-green-500 flex items-center justify-center">
+          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
       )}
       {status === 'warning' && (
-        <div className="w-4 h-4 rounded-full bg-warning-500 flex items-center justify-center flex-shrink-0">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-3.5 h-3.5 rounded-full bg-yellow-500 flex items-center justify-center">
+          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
           </svg>
         </div>
       )}
       {status === 'failed' && (
-        <div className="w-4 h-4 rounded-full bg-danger-500 flex items-center justify-center flex-shrink-0">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center">
+          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
       )}
       <span className={`text-xs ${
-        status === 'pending' ? 'text-navy-400' :
-        status === 'failed' ? 'text-danger-600' :
-        status === 'warning' ? 'text-warning-600' :
-        status === 'complete' ? 'text-success-600' :
-        'text-navy-700 font-medium'
+        status === 'pending' ? 'text-gray-400' :
+        status === 'failed' ? 'text-red-600' :
+        status === 'warning' ? 'text-yellow-600' :
+        status === 'complete' ? 'text-green-600' :
+        'text-gray-700'
       }`}>
         {label}
       </span>

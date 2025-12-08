@@ -357,6 +357,38 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
             <p className="text-navy-500 mt-1">out of {maxScore} points</p>
           </div>
 
+          {/* Links & Details - Moved above AI Assessment */}
+          <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-navy-100 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </span>
+              Links & Details
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-navy-400 mb-1">Repository</p>
+                <a href={report.repoUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block">
+                  {(report.repoUrl || '').replace('https://github.com/', '')}
+                </a>
+              </div>
+              <div>
+                <p className="text-xs text-navy-400 mb-1">Deployed App</p>
+                <a href={report.deployedUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block">
+                  {(report.deployedUrl || '').replace('https://', '')}
+                </a>
+              </div>
+              <div>
+                <p className="text-xs text-navy-400 mb-1">Evaluated</p>
+                <p className="text-sm text-navy-700 font-medium">
+                  {report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* AI Summary Card */}
           {report.aiExecutiveSummary && (
             <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
@@ -438,29 +470,6 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
                     </li>
                   ))}
                 </ul>
-              </AccordionItem>
-
-              <AccordionItem title="Links & Details" defaultOpen={false}>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-navy-400 mb-1">Repository</p>
-                    <a href={report.repoUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block">
-                      {(report.repoUrl || '').replace('https://github.com/', '')}
-                    </a>
-                  </div>
-                  <div>
-                    <p className="text-xs text-navy-400 mb-1">Deployed App</p>
-                    <a href={report.deployedUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block">
-                      {(report.deployedUrl || '').replace('https://', '')}
-                    </a>
-                  </div>
-                  <div>
-                    <p className="text-xs text-navy-400 mb-1">Evaluated</p>
-                    <p className="text-sm text-navy-700 font-medium">
-                      {report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'}
-                    </p>
-                  </div>
-                </div>
               </AccordionItem>
             </div>
           </div>
