@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { EvaluationReportData } from '@/app/page';
+import type { EvaluationReportData } from '@/types';
+import { getScoreTierGradient, getScoreColor, getScoreBg, getGradeLabel } from '@/lib/utils';
+import { Spinner } from '@/components/ui';
 
 interface EvaluationReportProps {
   report: EvaluationReportData;
@@ -86,10 +88,7 @@ export function PdfStatusButton({
   if (pdfStatus === 'generating') {
     return (
       <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-navy-100 text-navy-600 rounded-lg text-sm font-medium">
-        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+        <Spinner size="sm" />
         <span className="hidden sm:inline">Generating...</span>
       </div>
     );
@@ -123,28 +122,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
   const hasRubric = !!report.scores?.rubric;
   const overallScore = report.scores?.rubric?.overall ?? report.scores?.overall ?? 0;
   const maxScore = hasRubric ? 90 : 100;
-
-  const getScoreTier = (score: number, max: number) => {
-    const pct = (score / max) * 100;
-    if (pct >= 83) return { label: 'Excellent', color: 'bg-gradient-to-r from-success-500 to-success-600 text-white' };
-    if (pct >= 60) return { label: 'Good', color: 'bg-gradient-to-r from-warning-500 to-warning-600 text-white' };
-    return { label: 'Needs Work', color: 'bg-gradient-to-r from-danger-500 to-danger-600 text-white' };
-  };
-  const scoreTier = getScoreTier(overallScore, maxScore);
-
-  const getScoreColor = (score: number, max: number = 100) => {
-    const pct = (Math.max(0, score || 0) / Math.max(1, max || 100)) * 100;
-    if (pct >= 80) return 'text-success-600';
-    if (pct >= 60) return 'text-warning-600';
-    return 'text-danger-600';
-  };
-
-  const getScoreBg = (score: number, max: number = 100) => {
-    const pct = (Math.max(0, score || 0) / Math.max(1, max || 100)) * 100;
-    if (pct >= 80) return 'bg-success-500';
-    if (pct >= 60) return 'bg-warning-500';
-    return 'bg-danger-500';
-  };
+  const scoreTier = getScoreTierGradient(overallScore, maxScore);
 
   const rubricLabels: Record<string, { label: string; max: number; icon: string }> = {
     coreFunctionality: { label: 'Core Functionality', max: 20, icon: '⚡' },
@@ -367,8 +345,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
                 if (!rubricInfo) return null;
                 const safeValue = Math.max(0, value || 0);
                 const percentage = Math.round((safeValue / rubricInfo.max) * 100);
-                const gradeLabel = percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : percentage >= 40 ? 'Fair' : 'Needs Work';
-                const gradeColor = percentage >= 80 ? 'text-success-600 bg-success-50' : percentage >= 60 ? 'text-warning-600 bg-warning-50' : 'text-danger-600 bg-danger-50';
+                const grade = getGradeLabel(percentage);
                 return (
                   <div key={key} className="bg-white rounded-xl shadow-sm p-5 border border-navy-100 hover:shadow-md transition">
                     <div className="flex items-center justify-between mb-4">
@@ -384,7 +361,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
                       <div className={`h-full rounded-full transition-all duration-500 ${getScoreBg(safeValue, rubricInfo.max)}`} style={{ width: `${Math.min(100, percentage)}%` }} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${gradeColor}`}>{gradeLabel}</span>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${grade.color}`}>{grade.label}</span>
                     </div>
                     <p className="text-sm text-navy-600 leading-relaxed mt-3">{getRubricAssessment(key)}</p>
                   </div>

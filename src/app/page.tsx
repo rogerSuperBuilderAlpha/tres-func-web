@@ -6,11 +6,8 @@ import { EvaluationStatus } from '@/components/EvaluationStatus';
 import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
 import { EvaluationHistory } from '@/components/EvaluationHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
-import type { Evaluation, EvaluationReportData } from '@/types';
-
-export type { RubricScores, AiExecutiveSummary, EvaluationReportData } from '@/types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://3mw2hq6l57.execute-api.us-east-1.amazonaws.com/prod';
+import { API_BASE } from '@/lib/api';
+import type { Evaluation } from '@/types';
 
 export default function Home() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);

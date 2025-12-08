@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { isValidGitHubUrl, isValidUrl } from '@/lib/utils';
+import { Spinner } from '@/components/ui';
 
 interface SubmissionFormProps {
   onSubmit: (repoUrl: string, deployedUrl: string, backendRepoUrl?: string) => void;
@@ -19,19 +21,6 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
     }
   };
 
-  const isValidGitHubUrl = (url: string) => {
-    return url.startsWith('https://github.com/');
-  };
-
-  const isValidUrl = (url: string) => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const canSubmit =
     isValidGitHubUrl(repoUrl) &&
     isValidUrl(deployedUrl) &&
@@ -47,90 +36,39 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-navy-900">
-            Submit for Evaluation
-          </h2>
+          <h2 className="text-lg font-semibold text-navy-900">Submit for Evaluation</h2>
         </div>
 
         <div className="space-y-4">
-          {/* Form inputs */}
           <div className="space-y-3">
-            <div>
-              <label
-                htmlFor="repoUrl"
-                className="block text-sm font-medium text-navy-700 mb-1.5"
-              >
-                Frontend Repository <span className="text-danger-500">*</span>
-              </label>
-              <input
-                type="url"
-                id="repoUrl"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://github.com/username/frontend-repo"
-                className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 placeholder:text-navy-400"
-                required
-              />
-              {repoUrl && !isValidGitHubUrl(repoUrl) && (
-                <p className="mt-1.5 text-xs text-danger-600 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Please enter a valid GitHub URL
-                </p>
-              )}
-            </div>
+            <FormField
+              id="repoUrl"
+              label="Frontend Repository"
+              required
+              value={repoUrl}
+              onChange={setRepoUrl}
+              placeholder="https://github.com/username/frontend-repo"
+              error={repoUrl && !isValidGitHubUrl(repoUrl) ? 'Please enter a valid GitHub URL' : undefined}
+            />
 
-            <div>
-              <label
-                htmlFor="backendRepoUrl"
-                className="block text-sm font-medium text-navy-700 mb-1.5"
-              >
-                Backend Repository <span className="text-navy-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="url"
-                id="backendRepoUrl"
-                value={backendRepoUrl}
-                onChange={(e) => setBackendRepoUrl(e.target.value)}
-                placeholder="https://github.com/username/backend-repo"
-                className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 placeholder:text-navy-400"
-              />
-              {backendRepoUrl && !isValidGitHubUrl(backendRepoUrl) && (
-                <p className="mt-1.5 text-xs text-danger-600 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Please enter a valid GitHub URL
-                </p>
-              )}
-            </div>
+            <FormField
+              id="backendRepoUrl"
+              label="Backend Repository"
+              value={backendRepoUrl}
+              onChange={setBackendRepoUrl}
+              placeholder="https://github.com/username/backend-repo"
+              error={backendRepoUrl && !isValidGitHubUrl(backendRepoUrl) ? 'Please enter a valid GitHub URL' : undefined}
+            />
 
-            <div>
-              <label
-                htmlFor="deployedUrl"
-                className="block text-sm font-medium text-navy-700 mb-1.5"
-              >
-                Deployed Application <span className="text-danger-500">*</span>
-              </label>
-              <input
-                type="url"
-                id="deployedUrl"
-                value={deployedUrl}
-                onChange={(e) => setDeployedUrl(e.target.value)}
-                placeholder="https://candidate-app.vercel.app"
-                className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 placeholder:text-navy-400"
-                required
-              />
-              {deployedUrl && !isValidUrl(deployedUrl) && (
-                <p className="mt-1.5 text-xs text-danger-600 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Please enter a valid URL
-                </p>
-              )}
-            </div>
+            <FormField
+              id="deployedUrl"
+              label="Deployed Application"
+              required
+              value={deployedUrl}
+              onChange={setDeployedUrl}
+              placeholder="https://candidate-app.vercel.app"
+              error={deployedUrl && !isValidUrl(deployedUrl) ? 'Please enter a valid URL' : undefined}
+            />
 
             <button
               type="submit"
@@ -143,10 +81,7 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <Spinner size="sm" className="mr-2 text-white" />
                   Starting Evaluation...
                 </span>
               ) : (
@@ -162,5 +97,49 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
         </div>
       </div>
     </form>
+  );
+}
+
+// Extracted form field component
+function FormField({
+  id,
+  label,
+  required,
+  value,
+  onChange,
+  placeholder,
+  error,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  error?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-navy-700 mb-1.5">
+        {label} {required ? <span className="text-danger-500">*</span> : <span className="text-navy-400 font-normal">(optional)</span>}
+      </label>
+      <input
+        type="url"
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 placeholder:text-navy-400"
+        required={required}
+      />
+      {error && (
+        <p className="mt-1.5 text-xs text-danger-600 flex items-center gap-1">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
