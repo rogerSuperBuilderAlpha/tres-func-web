@@ -213,7 +213,10 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         <div className="p-6 lg:p-8">
           {/* Score Header */}
           <div className="text-center mb-8">
-            <div className={`inline-block px-8 py-3 rounded-2xl shadow-lg mb-3 ${scoreTier.color}`}>
+            <div 
+              className="inline-block px-8 py-3 rounded-2xl shadow-lg mb-3"
+              style={scoreTier.style}
+            >
               <span className="text-2xl font-bold text-white">{scoreTier.label}</span>
             </div>
             <div className={`text-6xl font-bold font-mono ${getScoreColor(overallScore, maxScore)}`}>

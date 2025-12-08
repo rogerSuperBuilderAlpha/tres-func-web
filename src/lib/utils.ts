@@ -1,6 +1,7 @@
 /**
  * Shared utility functions for the TTB Evaluator
  */
+import type React from 'react';
 
 // ============================================
 // Validation
@@ -56,6 +57,7 @@ export function extractRepoName(url: string | undefined | null): string {
 export type ScoreTier = {
   label: string;
   color: string;
+  style?: React.CSSProperties;
 };
 
 /**
@@ -69,13 +71,25 @@ export function getPerformanceTier(score: number): ScoreTier {
 
 /**
  * Get score tier with gradient styling (for badges)
- * Note: text-white should be applied separately on the text element
+ * Uses inline styles to avoid Tailwind purge issues with dynamic classes
  */
 export function getScoreTierGradient(score: number, max: number): ScoreTier {
   const pct = (score / max) * 100;
-  if (pct >= 83) return { label: 'Excellent', color: 'bg-gradient-to-r from-success-500 to-success-600' };
-  if (pct >= 60) return { label: 'Good', color: 'bg-gradient-to-r from-warning-500 to-warning-600' };
-  return { label: 'Needs Work', color: 'bg-gradient-to-r from-danger-500 to-danger-600' };
+  if (pct >= 83) return { 
+    label: 'Excellent', 
+    color: '',
+    style: { background: 'linear-gradient(to right, #10b981, #059669)' } // success-500 to success-600
+  };
+  if (pct >= 60) return { 
+    label: 'Good', 
+    color: '',
+    style: { background: 'linear-gradient(to right, #f59e0b, #d97706)' } // warning-500 to warning-600
+  };
+  return { 
+    label: 'Needs Work', 
+    color: '',
+    style: { background: 'linear-gradient(to right, #ef4444, #dc2626)' } // danger-500 to danger-600
+  };
 }
 
 /**
