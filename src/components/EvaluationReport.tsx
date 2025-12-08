@@ -214,7 +214,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
           {/* Score Header */}
           <div className="text-center mb-8">
             <div className={`inline-block px-8 py-3 rounded-2xl shadow-lg mb-3 ${scoreTier.color}`}>
-              <span className="text-2xl font-bold">{scoreTier.label}</span>
+              <span className="text-2xl font-bold text-white">{scoreTier.label}</span>
             </div>
             <div className={`text-6xl font-bold font-mono ${getScoreColor(overallScore, maxScore)}`}>
               {overallScore}

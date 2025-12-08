@@ -6,6 +6,7 @@ import { EvaluationStatus } from '@/components/EvaluationStatus';
 import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
 import { EvaluationHistory } from '@/components/EvaluationHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
+import { Spinner } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import type { Evaluation } from '@/types';
 
@@ -142,9 +143,12 @@ export default function Home() {
     }
   };
 
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
   const handleSelectEvaluation = async (evaluationId: string) => {
     setError(null);
-    setEvaluation({ evaluationId, status: 'PROCESSING' });
+    setIsLoadingHistory(true);
+    
     try {
       const response = await fetch(`${API_BASE}/status/${evaluationId}`);
       if (!response.ok) throw new Error('Failed to load evaluation');
@@ -164,11 +168,15 @@ export default function Home() {
         setError(data.error || 'This evaluation failed');
         setEvaluation(null);
       } else {
+        // Still processing - show the processing screen
+        setEvaluation({ evaluationId, status: 'PROCESSING' });
         pollStatus(evaluationId);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load evaluation');
       setEvaluation(null);
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
@@ -243,6 +251,16 @@ export default function Home() {
                 Try Again
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Loading overlay for history selection */}
+      {isLoadingHistory && (
+        <div className="fixed inset-0 z-40 bg-navy-950/30 backdrop-blur-sm flex items-center justify-center">
+          <div className="glass rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+            <Spinner size="lg" className="text-gold-500" />
+            <p className="text-navy-700 font-medium">Loading evaluation...</p>
           </div>
         </div>
       )}

@@ -69,12 +69,13 @@ export function getPerformanceTier(score: number): ScoreTier {
 
 /**
  * Get score tier with gradient styling (for badges)
+ * Note: text-white should be applied separately on the text element
  */
 export function getScoreTierGradient(score: number, max: number): ScoreTier {
   const pct = (score / max) * 100;
-  if (pct >= 83) return { label: 'Excellent', color: 'bg-gradient-to-r from-success-500 to-success-600 text-white' };
-  if (pct >= 60) return { label: 'Good', color: 'bg-gradient-to-r from-warning-500 to-warning-600 text-white' };
-  return { label: 'Needs Work', color: 'bg-gradient-to-r from-danger-500 to-danger-600 text-white' };
+  if (pct >= 83) return { label: 'Excellent', color: 'bg-gradient-to-r from-success-500 to-success-600' };
+  if (pct >= 60) return { label: 'Good', color: 'bg-gradient-to-r from-warning-500 to-warning-600' };
+  return { label: 'Needs Work', color: 'bg-gradient-to-r from-danger-500 to-danger-600' };
 }
 
 /**
