@@ -5,6 +5,21 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  // Safelist classes that are dynamically generated (e.g., from getScoreBg function)
+  safelist: [
+    'bg-success-500',
+    'bg-success-600',
+    'bg-warning-500',
+    'bg-warning-600',
+    'bg-danger-500',
+    'bg-danger-600',
+    'text-success-500',
+    'text-success-600',
+    'text-warning-500',
+    'text-warning-600',
+    'text-danger-500',
+    'text-danger-600',
+  ],
   theme: {
     extend: {
       colors: {
