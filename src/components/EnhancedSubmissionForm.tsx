@@ -160,7 +160,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Main submission card */}
-      <div className="glass rounded-2xl shadow-xl p-6 border border-navy-100">
+      <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl p-6 border border-navy-100 dark:border-navy-700">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-lg">
@@ -169,8 +169,8 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-navy-900">New Evaluation</h2>
-              <p className="text-xs text-navy-500">Enter submission details</p>
+              <h2 className="text-lg font-semibold text-navy-900 dark:text-white">New Evaluation</h2>
+              <p className="text-xs text-navy-500 dark:text-navy-400">Enter submission details</p>
             </div>
           </div>
           
@@ -178,7 +178,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
           <button
             type="button"
             onClick={handlePasteFromClipboard}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy-600 bg-navy-100 rounded-lg hover:bg-navy-200 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy-600 dark:text-navy-300 bg-navy-100 dark:bg-navy-700 rounded-lg hover:bg-navy-200 dark:hover:bg-navy-600 transition"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -223,10 +223,10 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
         </div>
 
         {/* Advanced Options */}
-        <div className="mt-5 pt-5 border-t border-navy-100">
+        <div className="mt-5 pt-5 border-t border-navy-100 dark:border-navy-700">
           <Collapsible
             trigger={
-              <div className="flex items-center gap-2 text-sm font-medium text-navy-700">
+              <div className="flex items-center gap-2 text-sm font-medium text-navy-700 dark:text-navy-300">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -238,7 +238,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
             <div className="mt-4 space-y-4">
               {/* Focus Mode */}
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-2">Evaluation Focus</label>
+                <label className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-2">Evaluation Focus</label>
                 <div className="grid grid-cols-2 gap-2">
                   {focusModes.map((mode) => (
                     <button
@@ -247,14 +247,14 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
                       onClick={() => setFocusMode(mode.value as SubmissionOptions['focusMode'])}
                       className={`flex items-center gap-2 p-3 rounded-xl border-2 transition ${
                         focusMode === mode.value
-                          ? 'border-gold-400 bg-gold-50'
-                          : 'border-navy-200 hover:border-navy-300'
+                          ? 'border-gold-400 bg-gold-50 dark:bg-gold-900/30'
+                          : 'border-navy-200 dark:border-navy-600 hover:border-navy-300 dark:hover:border-navy-500 bg-white dark:bg-navy-800'
                       }`}
                     >
                       <span className="text-lg">{mode.icon}</span>
                       <div className="text-left">
-                        <p className="text-sm font-medium text-navy-900">{mode.label}</p>
-                        <p className="text-xs text-navy-500">{mode.desc}</p>
+                        <p className="text-sm font-medium text-navy-900 dark:text-navy-100">{mode.label}</p>
+                        <p className="text-xs text-navy-500 dark:text-navy-400">{mode.desc}</p>
                       </div>
                     </button>
                   ))}
@@ -263,8 +263,8 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
 
               {/* Notes */}
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-navy-700 mb-1.5">
-                  Notes <span className="text-navy-400 font-normal">(optional)</span>
+                <label htmlFor="notes" className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-1.5">
+                  Notes <span className="text-navy-400 dark:text-navy-500 font-normal">(optional)</span>
                 </label>
                 <textarea
                   id="notes"
@@ -272,7 +272,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Any notes about this submission..."
                   rows={2}
-                  className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 placeholder:text-navy-400 resize-none"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-navy-800 border border-navy-200 dark:border-navy-600 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 dark:text-navy-100 placeholder:text-navy-400 dark:placeholder:text-navy-500 resize-none"
                 />
               </div>
             </div>
@@ -285,8 +285,8 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
           disabled={!canSubmit}
           className={`w-full mt-5 py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 ${
             canSubmit
-              ? 'bg-gradient-to-r from-navy-700 to-navy-900 text-white hover:from-navy-600 hover:to-navy-800 shadow-lg shadow-navy-900/25 hover:shadow-xl hover:shadow-navy-900/30 hover:-translate-y-0.5'
-              : 'bg-navy-200 text-navy-400 cursor-not-allowed'
+              ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-white hover:from-gold-400 hover:to-gold-500 shadow-lg shadow-gold-500/25 hover:shadow-xl hover:shadow-gold-500/30 hover:-translate-y-0.5'
+              : 'bg-navy-200 dark:bg-navy-700 text-navy-400 dark:text-navy-500 cursor-not-allowed'
           }`}
         >
           {isSubmitting ? (
@@ -346,12 +346,12 @@ function ValidatedInput({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-navy-700 mb-1.5">
+      <label htmlFor={id} className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-1.5">
         {label}{' '}
         {required ? (
           <span className="text-danger-500">*</span>
         ) : (
-          <span className="text-navy-400 font-normal">(optional)</span>
+          <span className="text-navy-400 dark:text-navy-500 font-normal">(optional)</span>
         )}
       </label>
       <div className="relative">
@@ -361,12 +361,12 @@ function ValidatedInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full px-4 py-2.5 pr-10 bg-white border rounded-xl focus:ring-2 transition text-sm text-navy-900 placeholder:text-navy-400 ${
+          className={`w-full px-4 py-2.5 pr-10 bg-white dark:bg-navy-800 border rounded-xl focus:ring-2 transition text-sm text-navy-900 dark:text-navy-100 placeholder:text-navy-400 dark:placeholder:text-navy-500 ${
             validation.error && value
-              ? 'border-danger-300 focus:ring-danger-400 focus:border-danger-400'
+              ? 'border-danger-300 dark:border-danger-500/50 focus:ring-danger-400 focus:border-danger-400'
               : validation.valid
-              ? 'border-success-300 focus:ring-success-400 focus:border-success-400'
-              : 'border-navy-200 focus:ring-gold-400 focus:border-gold-400'
+              ? 'border-success-300 dark:border-success-500/50 focus:ring-success-400 focus:border-success-400'
+              : 'border-navy-200 dark:border-navy-600 focus:ring-gold-400 focus:border-gold-400'
           }`}
           required={required}
         />

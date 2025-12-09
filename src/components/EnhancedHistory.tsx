@@ -141,7 +141,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
       )}
 
       {/* History List */}
-      <div className="glass rounded-2xl shadow-xl border border-navy-100 overflow-hidden">
+      <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 overflow-hidden">
         {/* Header with controls */}
         <div className="p-4 border-b border-navy-100 space-y-3">
           <div className="flex items-center justify-between">
@@ -152,14 +152,14 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-navy-900">Evaluation History</h3>
-                <p className="text-xs text-navy-500">{filteredEvaluations.length} of {evaluations.length} evaluations</p>
+                <h3 className="text-lg font-semibold text-navy-900 dark:text-white">Evaluation History</h3>
+                <p className="text-xs text-navy-500 dark:text-navy-400">{filteredEvaluations.length} of {evaluations.length} evaluations</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowStats(!showStats)}
-                className={`p-2 rounded-lg transition ${showStats ? 'bg-gold-100 text-gold-700' : 'text-navy-400 hover:bg-navy-100'}`}
+                className={`p-2 rounded-lg transition ${showStats ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400' : 'text-navy-400 hover:bg-navy-100 dark:hover:bg-navy-700'}`}
                 title="Toggle statistics"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -168,7 +168,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
               </button>
               <button
                 onClick={fetchEvaluations}
-                className="p-2 text-navy-400 hover:text-navy-600 hover:bg-navy-100 rounded-lg transition"
+                className="p-2 text-navy-400 hover:text-navy-600 dark:hover:text-navy-300 hover:bg-navy-100 dark:hover:bg-navy-700 rounded-lg transition"
                 title="Refresh"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,22 +188,22 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by repo name or ID..."
-              className="w-full pl-10 pr-4 py-2 bg-navy-50 border border-navy-200 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm"
+              className="w-full pl-10 pr-4 py-2 bg-navy-50 dark:bg-navy-800 border border-navy-200 dark:border-navy-600 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 dark:text-navy-100 placeholder:text-navy-400 dark:placeholder:text-navy-500"
             />
           </div>
 
           {/* Filters and Sort */}
           <div className="flex flex-wrap gap-2">
             {/* Score Filter */}
-            <div className="flex bg-navy-100 rounded-lg p-0.5">
+            <div className="flex bg-navy-100 dark:bg-navy-800 rounded-lg p-0.5">
               {(['all', 'excellent', 'proficient', 'needs-work'] as const).map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setScoreFilter(filter)}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition ${
                     scoreFilter === filter
-                      ? 'bg-white text-navy-900 shadow-sm'
-                      : 'text-navy-600 hover:text-navy-800'
+                      ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+                      : 'text-navy-600 dark:text-navy-400 hover:text-navy-800 dark:hover:text-navy-200'
                   }`}
                 >
                   {filter === 'all' ? 'All' : filter === 'needs-work' ? 'Needs Work' : filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -219,7 +219,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
                 setSortField(field);
                 setSortOrder(order);
               }}
-              className="px-3 py-1 text-xs font-medium bg-navy-100 border-none rounded-lg focus:ring-2 focus:ring-gold-400"
+              className="px-3 py-1 text-xs font-medium bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-300 border-none rounded-lg focus:ring-2 focus:ring-gold-400"
             >
               <option value="date-desc">Newest first</option>
               <option value="date-asc">Oldest first</option>
@@ -245,14 +245,14 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-navy-100 max-h-[400px] overflow-y-auto">
+          <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[400px] overflow-y-auto">
             {filteredEvaluations.map((evaluation) => {
               const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
               const tier = getPerformanceTier(score);
               return (
                 <div
                   key={evaluation.evaluationId}
-                  className="px-4 py-3 hover:bg-navy-50/50 cursor-pointer transition group"
+                  className="px-4 py-3 hover:bg-navy-50/50 dark:hover:bg-navy-800/50 cursor-pointer transition group"
                   onClick={() => onSelectEvaluation(evaluation.evaluationId)}
                 >
                   <div className="flex items-start justify-between">
@@ -261,14 +261,14 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
                         <Badge variant={tier.variant as 'success' | 'warning' | 'danger'} size="sm">
                           {tier.label}
                         </Badge>
-                        <span className="text-sm font-mono font-semibold text-navy-700">{score}/90</span>
+                        <span className="text-sm font-mono font-semibold text-navy-700 dark:text-navy-300">{score}/90</span>
                       </div>
-                      <p className="text-sm text-navy-800 truncate font-medium group-hover:text-navy-900">
+                      <p className="text-sm text-navy-800 dark:text-navy-200 truncate font-medium group-hover:text-navy-900 dark:group-hover:text-white">
                         {extractRepoName(evaluation.repoUrl)}
                       </p>
-                      <p className="text-xs text-navy-400 mt-0.5">{formatDate(evaluation.evaluatedAt)}</p>
+                      <p className="text-xs text-navy-400 dark:text-navy-500 mt-0.5">{formatDate(evaluation.evaluatedAt)}</p>
                       {evaluation.criticalFailuresCount > 0 && (
-                        <p className="text-xs text-danger-600 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-danger-600 dark:text-danger-400 mt-1 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
@@ -276,7 +276,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
                         </p>
                       )}
                     </div>
-                    <svg className="w-5 h-5 text-navy-300 group-hover:text-navy-500 transition ml-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 text-navy-300 dark:text-navy-600 group-hover:text-navy-500 dark:group-hover:text-navy-400 transition ml-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>

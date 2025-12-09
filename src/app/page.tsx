@@ -69,9 +69,13 @@ export default function Home() {
   };
 
   const pollStatus = useCallback(async (evaluationId: string) => {
-    const maxAttempts = 60;
+    // Extended polling - keep polling for up to 15 minutes (180 attempts at 5s intervals)
+    // The UI will show appropriate warnings after 3-5 minutes
+    const maxAttempts = 180;
     let attempts = 0;
     let consecutiveErrors = 0;
+    let lastProgressChange = Date.now();
+    let lastProgressStr = '';
 
     const poll = async () => {
       attempts++;
@@ -80,6 +84,13 @@ export default function Home() {
         if (!response.ok) throw new Error(`Status check failed: ${response.status}`);
         const data = await response.json();
         consecutiveErrors = 0;
+
+        // Track if progress is changing
+        const currentProgressStr = JSON.stringify(data.progress);
+        if (currentProgressStr !== lastProgressStr) {
+          lastProgressChange = Date.now();
+          lastProgressStr = currentProgressStr;
+        }
 
         setEvaluation(prev => prev ? {
           ...prev,
@@ -101,24 +112,44 @@ export default function Home() {
           if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
           return;
         }
+        
         if (data.status === 'FAILED') {
           setEvaluation({ evaluationId, status: 'FAILED', error: data.error });
           setError(data.error || 'Evaluation failed.');
           return;
         }
-        if (attempts < maxAttempts) setTimeout(poll, 5000);
-        else {
-          setError('Evaluation timed out after 5 minutes.');
-          setEvaluation(prev => prev ? { ...prev, status: 'FAILED' } : null);
+
+        // Check if evaluation seems truly stuck (no progress for 5 minutes)
+        const stuckTime = Date.now() - lastProgressChange;
+        if (stuckTime > 300000) { // 5 minutes with no progress change
+          // Show a soft error but don't stop polling entirely
+          setError('Evaluation appears to be stuck. You can wait or try again later.');
+        }
+        
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
+        } else {
+          // After 15 minutes, give up but provide helpful message
+          const runningTests = data.progress 
+            ? Object.entries(data.progress)
+                .filter(([_, status]) => status === 'running')
+                .map(([key]) => key.replace(/([A-Z])/g, ' $1').trim())
+            : [];
+          
+          const stuckMsg = runningTests.length > 0 
+            ? `Tests stuck on: ${runningTests.join(', ')}. This usually indicates an issue with the candidate's application.`
+            : 'Evaluation timed out after 15 minutes.';
+          
+          setError(stuckMsg);
+          // Don't mark as FAILED yet - let user see the partial progress
         }
       } catch (err) {
         consecutiveErrors++;
-        if (consecutiveErrors >= 3) {
-          setError('Failed to check status. Please refresh.');
-          setEvaluation(prev => prev ? { ...prev, status: 'FAILED' } : null);
+        if (consecutiveErrors >= 5) {
+          setError('Lost connection to server. The evaluation may still be running. Try refreshing in a few minutes.');
           return;
         }
-        if (attempts < maxAttempts) setTimeout(poll, 5000 * consecutiveErrors);
+        if (attempts < maxAttempts) setTimeout(poll, 5000 * Math.min(consecutiveErrors, 3));
       }
     };
     poll();
