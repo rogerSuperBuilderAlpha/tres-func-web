@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { SubmissionForm } from '@/components/SubmissionForm';
+import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
 import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
-import { EvaluationHistory } from '@/components/EvaluationHistory';
+import { EnhancedHistory } from '@/components/EnhancedHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
-import { Spinner } from '@/components/ui';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import type { Evaluation } from '@/types';
 
@@ -37,7 +38,7 @@ export default function Home() {
     pdfPollRef.current = setTimeout(poll, 2000);
   }, []);
 
-  const handleSubmit = async (repoUrl: string, deployedUrl: string, backendRepoUrl?: string) => {
+  const handleSubmit = async (repoUrl: string, deployedUrl: string, backendRepoUrl?: string, options?: SubmissionOptions) => {
     setIsSubmitting(true);
     setError(null);
     setEvaluation(null);
@@ -46,7 +47,7 @@ export default function Home() {
       const response = await fetch(`${API_BASE}/evaluate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl, deployedUrl, backendRepoUrl }),
+        body: JSON.stringify({ repoUrl, deployedUrl, backendRepoUrl, ...options }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || data.message || `API error: ${response.status}`);
@@ -183,9 +184,9 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern">
+    <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern dark:bg-navy-950">
       {/* Header */}
-      <header className="flex-shrink-0 glass border-b border-navy-200/50">
+      <header className="flex-shrink-0 glass dark:bg-navy-900/90 border-b border-navy-200/50 dark:border-navy-700">
         <div className="px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
@@ -195,13 +196,15 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-navy-900 tracking-tight">TTB Evaluator</h1>
-                <p className="text-xs text-navy-500 hidden sm:block">Automated candidate assessment</p>
+                <h1 className="text-lg font-semibold text-navy-900 dark:text-white tracking-tight">TTB Evaluator</h1>
+                <p className="text-xs text-navy-500 dark:text-navy-400 hidden sm:block">Automated candidate assessment</p>
               </div>
             </div>
             
             {/* Header CTAs */}
             <div className="flex items-center gap-2">
+              <ThemeToggle />
+              
               {evaluation?.status === 'COMPLETED' && (
                 <>
                   {/* Manual Review Button */}
@@ -227,7 +230,7 @@ export default function Home() {
               {evaluation && (
                 <button
                   onClick={handleReset}
-                  className="px-3 sm:px-4 py-2 text-sm bg-navy-100 text-navy-700 rounded-lg hover:bg-navy-200 transition font-medium"
+                  className="px-3 sm:px-4 py-2 text-sm bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-200 rounded-lg hover:bg-navy-200 dark:hover:bg-navy-700 transition font-medium"
                 >
                   <span className="hidden sm:inline">← New Evaluation</span>
                   <span className="sm:hidden">← New</span>
@@ -240,13 +243,13 @@ export default function Home() {
 
       {/* Error banner */}
       {error && (
-        <div className="flex-shrink-0 bg-danger-50 border-b border-danger-200 px-4 sm:px-6 py-3">
+        <div className="flex-shrink-0 bg-danger-50 dark:bg-danger-900/30 border-b border-danger-200 dark:border-danger-800 px-4 sm:px-6 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center min-w-0">
               <svg className="w-5 h-5 text-danger-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-danger-700 text-sm truncate">{error}</span>
+              <span className="text-danger-700 dark:text-danger-400 text-sm truncate">{error}</span>
             </div>
             {evaluation?.status === 'FAILED' && (
               <button onClick={handleReset} className="px-3 py-1 text-sm bg-danger-600 text-white rounded hover:bg-danger-500 transition flex-shrink-0">
@@ -260,9 +263,9 @@ export default function Home() {
       {/* Loading overlay for history selection */}
       {isLoadingHistory && (
         <div className="fixed inset-0 z-40 bg-navy-950/30 backdrop-blur-sm flex items-center justify-center">
-          <div className="glass rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+          <div className="glass dark:bg-navy-800 rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
             <Spinner size="lg" className="text-gold-500" />
-            <p className="text-navy-700 font-medium">Loading evaluation...</p>
+            <p className="text-navy-700 dark:text-navy-200 font-medium">Loading evaluation...</p>
           </div>
         </div>
       )}
@@ -271,13 +274,46 @@ export default function Home() {
       <div className="flex-1 overflow-hidden">
         {!evaluation ? (
           <div className="h-full overflow-y-auto p-4 sm:p-6">
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="flex flex-col justify-center">
-                <SubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-              </div>
-              <div>
-                <EvaluationHistory apiBase={API_BASE} onSelectEvaluation={handleSelectEvaluation} />
-              </div>
+            <div className="max-w-6xl mx-auto">
+              <Tabs defaultValue="new" className="h-full">
+                <TabsList className="mb-6 inline-flex">
+                  <TabsTrigger
+                    value="new"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    }
+                  >
+                    New Submission
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="history"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                  >
+                    History
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="new">
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div className="lg:col-span-3">
+                      <EnhancedSubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <EnhancedHistory apiBase={API_BASE} onSelectEvaluation={handleSelectEvaluation} />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="history">
+                  <EnhancedHistory apiBase={API_BASE} onSelectEvaluation={handleSelectEvaluation} />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         ) : evaluation.status === 'PROCESSING' ? (

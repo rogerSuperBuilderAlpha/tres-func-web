@@ -5,6 +5,7 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  darkMode: 'class',
   // Safelist classes that are dynamically generated (e.g., from getScoreBg function)
   safelist: [
     'bg-success-500',
@@ -64,6 +65,7 @@ module.exports = {
           100: '#fef3c7',
           500: '#f59e0b',
           600: '#d97706',
+          700: '#b45309',
         },
         // Danger - Rose tint
         danger: {

@@ -57,6 +57,7 @@ export function extractRepoName(url: string | undefined | null): string {
 export type ScoreTier = {
   label: string;
   color: string;
+  variant?: 'success' | 'warning' | 'danger';
   style?: React.CSSProperties;
 };
 
@@ -64,9 +65,9 @@ export type ScoreTier = {
  * Get performance tier based on score (out of 90)
  */
 export function getPerformanceTier(score: number): ScoreTier {
-  if (score >= 75) return { label: 'Excellent', color: 'bg-success-100 text-success-700 border-success-200' };
-  if (score >= 54) return { label: 'Proficient', color: 'bg-warning-100 text-warning-600 border-warning-200' };
-  return { label: 'Needs Work', color: 'bg-danger-100 text-danger-600 border-danger-200' };
+  if (score >= 75) return { label: 'Excellent', color: 'bg-success-100 text-success-700 border-success-200', variant: 'success' };
+  if (score >= 54) return { label: 'Proficient', color: 'bg-warning-100 text-warning-600 border-warning-200', variant: 'warning' };
+  return { label: 'Needs Work', color: 'bg-danger-100 text-danger-600 border-danger-200', variant: 'danger' };
 }
 
 /**
