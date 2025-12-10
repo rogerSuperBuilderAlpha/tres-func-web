@@ -13,22 +13,6 @@ interface EvaluationStatusProps {
   detailedProgress?: DetailedProgress[];
 }
 
-// Test expected durations in seconds
-const TEST_DURATIONS: Record<string, number> = {
-  preflight: 15,
-  repoAnalysis: 45,
-  security: 60,
-  imageEdgeCases: 60,
-  formInput: 45,
-  resilience: 90,
-  functional: 90,
-  uxTest: 120,
-  aiReview: 60,
-  deployment: 30,
-  reportGeneration: 45,
-  pdfGeneration: 60,
-};
-
 // Time thresholds
 const WARNING_THRESHOLD = 180; // 3 minutes - show warning
 const CRITICAL_THRESHOLD = 300; // 5 minutes - show critical status
@@ -96,42 +80,39 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
     return 'normal';
   }, [elapsedSeconds, isStuck]);
 
-  // Get status message
-  const statusMessage = useMemo(() => {
-    if (isStuck && runningTests.length > 0) {
-      const testName = runningTests[0].replace(/([A-Z])/g, ' $1').trim();
-      return `${testName} is taking longer than expected. This might indicate an issue with the candidate's application or a slow response from their server.`;
-    }
-    if (statusLevel === 'critical') {
-      return 'This evaluation is taking unusually long. There may be an issue with the candidate\'s deployment or one of our test services.';
-    }
-    if (statusLevel === 'warning') {
-      return 'Still running... Some tests are taking longer than usual. This can happen with slow or complex applications.';
-    }
-    return null;
-  }, [statusLevel, isStuck, runningTests]);
-
-  // Get the latest activity message
-  const latestActivity = detailedProgress?.[0];
+  // Format running test name
+  const currentTestName = runningTests.length > 0 
+    ? runningTests[0].replace(/([A-Z])/g, ' $1').trim()
+    : 'Initializing';
 
   return (
-    <div className="w-full max-w-4xl">
-      <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl p-6 border border-navy-100 dark:border-navy-700">
-        <h2 className="text-xl font-semibold text-navy-900 dark:text-white mb-4">
-          Evaluation in Progress
-        </h2>
+    <div className="w-full max-w-6xl">
+      <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-navy-100 dark:border-navy-700 bg-navy-50/50 dark:bg-navy-800/50">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-navy-900 dark:text-white">
+              Evaluation in Progress
+            </h2>
+            <span className="text-xs font-mono text-navy-400 dark:text-navy-500 bg-navy-100 dark:bg-navy-800 px-2 py-1 rounded">
+              {evaluationId}
+            </span>
+          </div>
+        </div>
 
-        <div className="flex gap-4">
-          {/* Left side - Status info */}
-          <div className="flex-1 space-y-4">
-            {/* Header with spinner */}
-            <div className="flex items-center gap-3">
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${
+        {/* 3-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-navy-100 dark:divide-navy-700">
+          
+          {/* LEFT COLUMN: Timer & Progress */}
+          <div className="lg:col-span-3 p-5">
+            <div className="flex flex-col items-center text-center">
+              {/* Spinning indicator */}
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
                 statusLevel === 'critical' ? 'bg-danger-100 dark:bg-danger-900/30' :
                 statusLevel === 'warning' ? 'bg-warning-100 dark:bg-warning-900/30' :
                 'bg-gold-100 dark:bg-gold-900/30'
               }`}>
-                <svg className={`animate-spin h-5 w-5 ${
+                <svg className={`animate-spin h-8 w-8 ${
                   statusLevel === 'critical' ? 'text-danger-600 dark:text-danger-400' :
                   statusLevel === 'warning' ? 'text-warning-600 dark:text-warning-400' :
                   'text-gold-600 dark:text-gold-400'
@@ -140,88 +121,112 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-navy-600 dark:text-navy-300">
-                  {runningTests.length > 0 
-                    ? `Running: ${runningTests.map(t => t.replace(/([A-Z])/g, ' $1').trim()).join(', ')}`
-                    : 'Running comprehensive tests...'}
+              
+              {/* Timer */}
+              <div className={`text-4xl font-mono font-bold mb-1 ${
+                statusLevel === 'critical' ? 'text-danger-600 dark:text-danger-400' :
+                statusLevel === 'warning' ? 'text-warning-600 dark:text-warning-400' :
+                'text-navy-800 dark:text-white'
+              }`}>
+                {elapsedMinutes}:{remainingSeconds.toString().padStart(2, '0')}
+              </div>
+              <p className="text-xs text-navy-500 dark:text-navy-400 mb-4">Elapsed</p>
+              
+              {/* Progress bar */}
+              <div className="w-full">
+                <div className="flex justify-between text-xs text-navy-600 dark:text-navy-400 mb-1">
+                  <span>Progress</span>
+                  <span className="font-mono">{completedCount}/{totalTests}</span>
+                </div>
+                <div className="w-full bg-navy-200 dark:bg-navy-700 rounded-full h-2.5">
+                  <div
+                    className={`h-2.5 rounded-full transition-all duration-500 ${
+                      statusLevel === 'critical' ? 'bg-danger-500' :
+                      statusLevel === 'warning' ? 'bg-warning-500' :
+                      'bg-gold-500'
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Current task */}
+              <div className="mt-4 pt-4 border-t border-navy-100 dark:border-navy-700 w-full">
+                <p className="text-[10px] uppercase tracking-wide text-navy-400 dark:text-navy-500 mb-1">Currently Running</p>
+                <p className={`text-sm font-medium ${
+                  isStuck ? 'text-warning-600 dark:text-warning-400' : 'text-navy-700 dark:text-navy-200'
+                }`}>
+                  {currentTestName}
                 </p>
-                <p className="text-xs text-navy-400 dark:text-navy-500 font-mono">{evaluationId}</p>
+                {isStuck && (
+                  <p className="text-[10px] text-warning-500 mt-1">
+                    Slow response ({Math.floor(stuckSeconds / 60)}m {stuckSeconds % 60}s)
+                  </p>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Timer and Progress */}
-            <div className="flex items-center gap-6">
-              <div>
-                <div className={`text-2xl font-mono font-bold ${
-                  statusLevel === 'critical' ? 'text-danger-600 dark:text-danger-400' :
-                  statusLevel === 'warning' ? 'text-warning-600 dark:text-warning-400' :
-                  'text-navy-800 dark:text-white'
-                }`}>
-                  {elapsedMinutes > 0 ? `${elapsedMinutes}:${remainingSeconds.toString().padStart(2, '0')}` : `0:${remainingSeconds.toString().padStart(2, '0')}`}
+          {/* MIDDLE COLUMN: Live Activity Log */}
+          <div className="lg:col-span-5 p-5">
+            <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Live Activity
+            </h3>
+            <div className="bg-navy-900 dark:bg-navy-950 rounded-xl p-4 h-[280px] overflow-y-auto font-mono text-xs">
+              {detailedProgress && detailedProgress.length > 0 ? (
+                <div className="space-y-1">
+                  {detailedProgress.slice(0, 20).map((item, index) => (
+                    <div key={`${item.timestamp}-${index}`} className="flex items-start gap-2 py-0.5">
+                      <span className={`flex-shrink-0 w-4 text-center ${
+                        item.stage === 'error' ? 'text-red-400' :
+                        item.stage === 'complete' ? 'text-green-400' :
+                        'text-gold-400'
+                      }`}>
+                        {item.stage === 'error' ? '✗' : item.stage === 'complete' ? '✓' : '→'}
+                      </span>
+                      <span className="text-cyan-400 flex-shrink-0">[{item.testName}]</span>
+                      <span className="text-navy-200 flex-1">{item.message}</span>
+                      {item.percentage !== undefined && (
+                        <span className="text-navy-500 flex-shrink-0 tabular-nums">{item.percentage}%</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-navy-500 dark:text-navy-400">Elapsed</p>
-              </div>
-              {progress && (
-                <div className="flex-1">
-                  <div className="flex justify-between text-xs text-navy-600 dark:text-navy-400 mb-1">
-                    <span>Progress</span>
-                    <span>{completedCount}/{totalTests}</span>
-                  </div>
-                  <div className="w-full bg-navy-200 dark:bg-navy-700 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        statusLevel === 'critical' ? 'bg-danger-500' :
-                        statusLevel === 'warning' ? 'bg-warning-500' :
-                        'bg-gold-500'
-                      }`}
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
+              ) : (
+                <div className="text-navy-500 text-center py-8">
+                  <p>Waiting for activity...</p>
                 </div>
               )}
             </div>
-
-            {/* Status message */}
-            {statusMessage ? (
-              <div className={`p-3 rounded-lg text-sm ${
+            
+            {/* Status message if any */}
+            {statusLevel !== 'normal' && (
+              <div className={`mt-3 p-3 rounded-lg text-xs ${
                 statusLevel === 'critical' 
                   ? 'bg-danger-50 dark:bg-danger-900/20 text-danger-700 dark:text-danger-300 border border-danger-200 dark:border-danger-800' 
                   : 'bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-300 border border-warning-200 dark:border-warning-800'
               }`}>
-                <div className="flex items-start gap-2">
-                  <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  <div>
-                    <p>{statusMessage}</p>
-                    {isStuck && (
-                      <p className="text-xs mt-1 opacity-75">No progress for {Math.floor(stuckSeconds / 60)}m {stuckSeconds % 60}s</p>
-                    )}
-                  </div>
+                  <span>
+                    {isStuck 
+                      ? `${currentTestName} is taking longer than expected`
+                      : 'This evaluation is taking longer than usual'}
+                  </span>
                 </div>
-              </div>
-            ) : (
-              <p className="text-xs text-navy-500 dark:text-navy-400">
-                Typically takes 2-4 minutes. Complex applications may take longer.
-              </p>
-            )}
-
-            {/* Latest activity */}
-            {latestActivity && (
-              <div className="bg-navy-50 dark:bg-navy-800/50 rounded-lg p-3">
-                <p className="text-xs text-navy-500 dark:text-navy-400 mb-1">Latest Activity</p>
-                <p className="text-sm text-navy-700 dark:text-navy-200">
-                  <span className="font-medium">[{latestActivity.testName}]</span> {latestActivity.message}
-                </p>
               </div>
             )}
           </div>
 
-          {/* Right side - Test status list */}
-          <div className="w-56 bg-navy-50 dark:bg-navy-800/50 rounded-lg p-4">
-            <h3 className="font-medium text-navy-800 dark:text-navy-200 mb-2 text-xs uppercase tracking-wide">Test Status</h3>
-            <div className="space-y-1.5">
+          {/* RIGHT COLUMN: Test Status Checklist */}
+          <div className="lg:col-span-4 p-5 bg-navy-50/30 dark:bg-navy-800/30">
+            <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3">
+              Test Status
+            </h3>
+            <div className="space-y-2">
               <StatusItem label="Pre-flight Check" status={progress?.preflight || 'pending'} isStuck={isStuck && runningTests.includes('preflight')} />
               <StatusItem label="Repo Analysis" status={progress?.repoAnalysis || 'pending'} isStuck={isStuck && runningTests.includes('repoAnalysis')} />
               <StatusItem label="Security" status={progress?.security || 'pending'} isStuck={isStuck && runningTests.includes('security')} />
@@ -235,33 +240,13 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
               <StatusItem label="Report Gen" status={progress?.reportGeneration || 'pending'} isStuck={isStuck && runningTests.includes('reportGeneration')} />
               <StatusItem label="PDF Report" status={progress?.pdfGeneration || 'pending'} isStuck={isStuck && runningTests.includes('pdfGeneration')} />
             </div>
+
+            {/* Typical time note */}
+            <p className="text-[10px] text-navy-400 dark:text-navy-500 mt-4 pt-3 border-t border-navy-200 dark:border-navy-700">
+              Typically takes 2-4 minutes. Complex applications may take longer.
+            </p>
           </div>
         </div>
-
-        {/* Live activity log */}
-        {detailedProgress && detailedProgress.length > 0 && (
-          <div className="mt-4 border-t border-navy-200 dark:border-navy-700 pt-4">
-            <h3 className="font-medium text-navy-800 dark:text-navy-200 mb-2 text-xs uppercase tracking-wide">Live Activity Log</h3>
-            <div className="bg-navy-900 dark:bg-navy-950 rounded-lg p-3 max-h-32 overflow-y-auto font-mono text-xs">
-              {detailedProgress.slice(0, 10).map((item, index) => (
-                <div key={`${item.timestamp}-${index}`} className="flex items-start gap-2 py-0.5">
-                  <span className={`flex-shrink-0 ${
-                    item.stage === 'error' ? 'text-red-400' :
-                    item.stage === 'complete' ? 'text-green-400' :
-                    'text-gold-400'
-                  }`}>
-                    {item.stage === 'error' ? '✗' : item.stage === 'complete' ? '✓' : '→'}
-                  </span>
-                  <span className="text-navy-400">[{item.testName}]</span>
-                  <span className="text-navy-200">{item.message}</span>
-                  {item.percentage !== undefined && (
-                    <span className="text-navy-500 ml-auto">{item.percentage}%</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -271,50 +256,61 @@ function StatusItem({ label, status, isStuck }: { label: string; status: 'pendin
   const showWarning = isStuck && status === 'running';
   
   return (
-    <div className="flex items-center space-x-2">
-      {status === 'pending' && (
-        <div className="w-3.5 h-3.5 rounded-full border-2 border-navy-300 dark:border-navy-600" />
-      )}
-      {status === 'running' && !showWarning && (
-        <div className="w-3.5 h-3.5 rounded-full border-2 border-gold-500 border-t-transparent animate-spin" />
-      )}
-      {status === 'running' && showWarning && (
-        <div className="w-3.5 h-3.5 rounded-full bg-warning-500 flex items-center justify-center animate-pulse">
-          <span className="text-[8px] text-white font-bold">!</span>
-        </div>
-      )}
-      {status === 'complete' && (
-        <div className="w-3.5 h-3.5 rounded-full bg-success-500 flex items-center justify-center">
-          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      )}
-      {status === 'warning' && (
-        <div className="w-3.5 h-3.5 rounded-full bg-warning-500 flex items-center justify-center">
-          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
-          </svg>
-        </div>
-      )}
-      {status === 'failed' && (
-        <div className="w-3.5 h-3.5 rounded-full bg-danger-500 flex items-center justify-center">
-          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-      )}
-      <span className={`text-xs ${
+    <div className="flex items-center gap-2.5 py-1">
+      {/* Status icon */}
+      <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+        {status === 'pending' && (
+          <div className="w-4 h-4 rounded-full border-2 border-navy-300 dark:border-navy-600" />
+        )}
+        {status === 'running' && !showWarning && (
+          <div className="w-4 h-4 rounded-full border-2 border-gold-500 border-t-transparent animate-spin" />
+        )}
+        {status === 'running' && showWarning && (
+          <div className="w-4 h-4 rounded-full bg-warning-500 flex items-center justify-center animate-pulse">
+            <span className="text-[10px] text-white font-bold">!</span>
+          </div>
+        )}
+        {status === 'complete' && (
+          <div className="w-4 h-4 rounded-full bg-success-500 flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        )}
+        {status === 'warning' && (
+          <div className="w-4 h-4 rounded-full bg-warning-500 flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
+            </svg>
+          </div>
+        )}
+        {status === 'failed' && (
+          <div className="w-4 h-4 rounded-full bg-danger-500 flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )}
+      </div>
+      
+      {/* Label */}
+      <span className={`text-sm ${
         status === 'pending' ? 'text-navy-400 dark:text-navy-500' :
         status === 'failed' ? 'text-danger-600 dark:text-danger-400' :
         showWarning ? 'text-warning-600 dark:text-warning-400 font-medium' :
         status === 'warning' ? 'text-warning-600 dark:text-warning-400' :
-        status === 'complete' ? 'text-success-600 dark:text-success-400' :
-        'text-navy-700 dark:text-navy-300'
+        status === 'complete' ? 'text-navy-700 dark:text-navy-200' :
+        'text-navy-700 dark:text-navy-200 font-medium'
       }`}>
         {label}
-        {showWarning && <span className="ml-1 text-[10px]">(slow)</span>}
       </span>
+      
+      {/* Slow indicator */}
+      {showWarning && (
+        <span className="text-[10px] px-1.5 py-0.5 bg-warning-100 dark:bg-warning-900/30 text-warning-600 dark:text-warning-400 rounded ml-auto">
+          slow
+        </span>
+      )}
     </div>
   );
 }
