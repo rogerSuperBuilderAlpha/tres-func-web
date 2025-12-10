@@ -126,24 +126,6 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
     }
   };
 
-  // Paste from clipboard
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (isValidRepoUrl(text)) {
-        if (!repoUrl) {
-          setRepoUrl(text);
-        } else if (!backendRepoUrl) {
-          setBackendRepoUrl(text);
-        }
-      } else if (isValidUrl(text)) {
-        setDeployedUrl(text);
-      }
-    } catch (err) {
-      console.error('Failed to read clipboard:', err);
-    }
-  };
-
   const canSubmit =
     repoValidation.valid &&
     siteValidation.valid &&
@@ -174,17 +156,6 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
             </div>
           </div>
           
-          {/* Quick actions */}
-          <button
-            type="button"
-            onClick={handlePasteFromClipboard}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy-600 dark:text-navy-300 bg-navy-100 dark:bg-navy-700 rounded-lg hover:bg-navy-200 dark:hover:bg-navy-600 transition"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Paste URL
-          </button>
         </div>
 
         <div className="space-y-4">
