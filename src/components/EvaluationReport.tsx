@@ -1,7 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import type { EvaluationReportData, ManualReview } from '@/types';
+import type { EvaluationReportData, ManualReview, CriticalIssue } from '@/types';
+
+// Helper to normalize critical issues (handles both string and object formats)
+function formatCriticalIssue(issue: string | CriticalIssue): string {
+  if (typeof issue === 'string') {
+    return issue;
+  }
+  // Handle object format from AI evaluation
+  const description = issue.description || issue.issue || 'Unknown issue';
+  const severity = issue.severity ? `[${issue.severity.toUpperCase()}]` : '';
+  const category = issue.category || issue.type || '';
+  
+  if (category && severity) {
+    return `${severity} ${category}: ${description}`;
+  } else if (category) {
+    return `${category}: ${description}`;
+  } else if (severity) {
+    return `${severity} ${description}`;
+  }
+  return description;
+}
 import { getScoreTierGradient, getScoreColor, getScoreBg, getGradeLabel, formatDate } from '@/lib/utils';
 import { Spinner } from '@/components/ui';
 
@@ -449,7 +469,7 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
                 {(report.criticalIssues ?? report.criticalFailures ?? []).map((issue, i) => (
                   <li key={i} className="text-sm text-danger-700 flex items-start gap-2">
                     <span className="text-danger-400 mt-0.5">•</span>
-                    <span>{issue}</span>
+                    <span>{formatCriticalIssue(issue)}</span>
                   </li>
                 ))}
               </ul>

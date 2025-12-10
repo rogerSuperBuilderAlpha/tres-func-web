@@ -91,6 +91,15 @@ export interface EvaluationSummary {
   aiAssessment?: string;
 }
 
+// Critical issue type (can be string for legacy or object for AI-generated)
+export interface CriticalIssue {
+  type?: string;
+  category?: string;
+  severity?: 'critical' | 'high' | 'medium' | 'low';
+  description?: string;
+  issue?: string; // Alternative field name used by AI
+}
+
 // Report data types
 export interface EvaluationReportData {
   submissionId: string;
@@ -111,7 +120,7 @@ export interface EvaluationReportData {
   };
   tier?: string; // Legacy field - no longer used
   tierReason?: string; // Legacy field - no longer used
-  criticalIssues?: string[];
+  criticalIssues?: (string | CriticalIssue)[];
   criticalFailures?: string[]; // Deprecated - kept for backward compatibility
   summary: {
     strengths: string[];
