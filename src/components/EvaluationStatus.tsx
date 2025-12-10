@@ -168,12 +168,12 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
           </div>
 
           {/* MIDDLE COLUMN: Live Activity Log */}
-          <div className="lg:col-span-5 p-5">
-            <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3 flex items-center gap-2">
+          <div className="lg:col-span-5 p-5 flex flex-col min-h-[400px]">
+            <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3 flex items-center gap-2 flex-shrink-0">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               Live Activity
             </h3>
-            <div className="bg-navy-900 dark:bg-navy-950 rounded-xl p-4 h-[280px] overflow-y-auto font-mono text-xs">
+            <div className="bg-navy-900 dark:bg-navy-950 rounded-xl p-4 flex-1 overflow-y-auto font-mono text-xs">
               {detailedProgress && detailedProgress.length > 0 ? (
                 <div className="space-y-1">
                   {detailedProgress.slice(0, 20).map((item, index) => (
@@ -222,7 +222,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
           </div>
 
           {/* RIGHT COLUMN: Test Status Checklist */}
-          <div className="lg:col-span-4 p-5 bg-navy-50/30 dark:bg-navy-800/30">
+          <div className="lg:col-span-4 p-5 bg-navy-50/30 dark:bg-navy-800/30 min-h-[400px]">
             <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3">
               Test Status
             </h3>
