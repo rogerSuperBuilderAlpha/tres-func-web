@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { isValidGitHubUrl, isValidUrl } from '@/lib/utils';
+import { isValidRepoUrl, isValidUrl, getRepoProvider } from '@/lib/utils';
 import { fetchRepoMetadata, checkSiteAccessibility, RepoMetadata, SiteMetadata } from '@/lib/validators';
 import { Spinner, Collapsible, Badge } from '@/components/ui';
 import { RepoPreview } from './RepoPreview';
@@ -53,7 +53,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
       return;
     }
 
-    if (!isValidGitHubUrl(url)) {
+    if (!isValidRepoUrl(url)) {
       setState({ checking: false, valid: false, error: 'Invalid GitHub URL' });
       setMeta(null);
       return;
@@ -130,7 +130,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      if (isValidGitHubUrl(text)) {
+      if (isValidRepoUrl(text)) {
         if (!repoUrl) {
           setRepoUrl(text);
         } else if (!backendRepoUrl) {

@@ -48,9 +48,30 @@ export function parseGitHubUrl(url: string): { owner: string; repo: string } | n
 }
 
 /**
+ * Extract project path from GitLab URL
+ */
+export function parseGitLabUrl(url: string): { host: string; projectPath: string } | null {
+  const cleanUrl = url.replace(/\.git$/, '').replace(/\/$/, '');
+  const match = cleanUrl.match(/^https?:\/\/([^\/]+)\/(.+)$/);
+  if (match) {
+    return { host: match[1], projectPath: match[2] };
+  }
+  return null;
+}
+
+/**
+ * Detect repo provider from URL
+ */
+export function getRepoProvider(url: string): 'github' | 'gitlab' | null {
+  if (url.includes('github.com')) return 'github';
+  if (url.includes('gitlab.com') || url.match(/gitlab\.[a-z]+/)) return 'gitlab';
+  return null;
+}
+
+/**
  * Fetch GitHub repo metadata
  */
-export async function fetchRepoMetadata(repoUrl: string): Promise<RepoMetadata | null> {
+async function fetchGitHubMetadata(repoUrl: string): Promise<RepoMetadata | null> {
   const parsed = parseGitHubUrl(repoUrl);
   if (!parsed) return null;
 
@@ -102,9 +123,83 @@ export async function fetchRepoMetadata(repoUrl: string): Promise<RepoMetadata |
       readme,
     };
   } catch (error) {
-    console.error('Failed to fetch repo metadata:', error);
+    console.error('Failed to fetch GitHub repo metadata:', error);
     return null;
   }
+}
+
+/**
+ * Fetch GitLab repo metadata
+ */
+async function fetchGitLabMetadata(repoUrl: string): Promise<RepoMetadata | null> {
+  const parsed = parseGitLabUrl(repoUrl);
+  if (!parsed) return null;
+
+  try {
+    const encodedPath = encodeURIComponent(parsed.projectPath);
+    const response = await fetch(`https://${parsed.host}/api/v4/projects/${encodedPath}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`GitLab API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Try to fetch README
+    let readme: string | undefined;
+    try {
+      const readmeResponse = await fetch(
+        `https://${parsed.host}/api/v4/projects/${encodedPath}/repository/files/README.md/raw?ref=${data.default_branch || 'main'}`,
+        { headers: { 'Accept': 'text/plain' } }
+      );
+      if (readmeResponse.ok) {
+        const readmeText = await readmeResponse.text();
+        readme = readmeText.substring(0, 500);
+      }
+    } catch {
+      // README fetch failed, that's ok
+    }
+
+    return {
+      name: data.name,
+      fullName: data.path_with_namespace,
+      description: data.description || undefined,
+      language: undefined, // GitLab doesn't have a simple language field
+      stars: data.star_count || 0,
+      forks: data.forks_count || 0,
+      lastUpdated: data.last_activity_at,
+      owner: {
+        login: data.namespace?.name || data.path_with_namespace.split('/')[0],
+        avatarUrl: data.avatar_url || data.namespace?.avatar_url || '',
+      },
+      defaultBranch: data.default_branch || 'main',
+      isPrivate: data.visibility !== 'public',
+      readme,
+    };
+  } catch (error) {
+    console.error('Failed to fetch GitLab repo metadata:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetch repo metadata (supports GitHub and GitLab)
+ */
+export async function fetchRepoMetadata(repoUrl: string): Promise<RepoMetadata | null> {
+  const provider = getRepoProvider(repoUrl);
+  
+  if (provider === 'github') {
+    return fetchGitHubMetadata(repoUrl);
+  } else if (provider === 'gitlab') {
+    return fetchGitLabMetadata(repoUrl);
+  }
+  
+  return null;
 }
 
 /**

@@ -8,7 +8,24 @@ import type React from 'react';
 // ============================================
 
 export function isValidGitHubUrl(url: string): boolean {
-  return url.startsWith('https://github.com/');
+  return /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+\/?$/.test(url);
+}
+
+export function isValidGitLabUrl(url: string): boolean {
+  // Supports gitlab.com and self-hosted GitLab instances
+  return /^https?:\/\/(www\.)?(gitlab\.com|gitlab\.[a-z]+(\.[a-z]+)?)(\/[\w.-]+){2,}\/?$/.test(url);
+}
+
+export function isValidRepoUrl(url: string): boolean {
+  return isValidGitHubUrl(url) || isValidGitLabUrl(url);
+}
+
+export type RepoProvider = 'github' | 'gitlab';
+
+export function getRepoProvider(url: string): RepoProvider | null {
+  if (isValidGitHubUrl(url)) return 'github';
+  if (isValidGitLabUrl(url)) return 'gitlab';
+  return null;
 }
 
 export function isValidUrl(url: string): boolean {
@@ -43,8 +60,15 @@ export function formatDate(dateString: string | undefined | null): string {
 export function extractRepoName(url: string | undefined | null): string {
   if (!url) return 'Unknown repository';
   try {
-    const match = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
-    return match ? match[1] : url;
+    // Try GitHub format
+    const githubMatch = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    if (githubMatch) return githubMatch[1];
+    
+    // Try GitLab format
+    const gitlabMatch = url.match(/gitlab\.[^\/]+\/(.+?)(?:\.git)?$/);
+    if (gitlabMatch) return gitlabMatch[1];
+    
+    return url;
   } catch {
     return url;
   }

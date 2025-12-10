@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { isValidGitHubUrl, isValidUrl } from '@/lib/utils';
+import { isValidRepoUrl, isValidUrl } from '@/lib/utils';
 import { Spinner } from '@/components/ui';
 
 interface SubmissionFormProps {
@@ -22,9 +22,9 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
   };
 
   const canSubmit =
-    isValidGitHubUrl(repoUrl) &&
+    isValidRepoUrl(repoUrl) &&
     isValidUrl(deployedUrl) &&
-    (!backendRepoUrl || isValidGitHubUrl(backendRepoUrl)) &&
+    (!backendRepoUrl || isValidRepoUrl(backendRepoUrl)) &&
     !isSubmitting;
 
   return (
@@ -48,7 +48,7 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
               value={repoUrl}
               onChange={setRepoUrl}
               placeholder="https://github.com/username/frontend-repo"
-              error={repoUrl && !isValidGitHubUrl(repoUrl) ? 'Please enter a valid GitHub URL' : undefined}
+              error={repoUrl && !isValidRepoUrl(repoUrl) ? 'Please enter a valid GitHub or GitLab URL' : undefined}
             />
 
             <FormField
@@ -57,7 +57,7 @@ export function SubmissionForm({ onSubmit, isSubmitting }: SubmissionFormProps) 
               value={backendRepoUrl}
               onChange={setBackendRepoUrl}
               placeholder="https://github.com/username/backend-repo"
-              error={backendRepoUrl && !isValidGitHubUrl(backendRepoUrl) ? 'Please enter a valid GitHub URL' : undefined}
+              error={backendRepoUrl && !isValidRepoUrl(backendRepoUrl) ? 'Please enter a valid GitHub or GitLab URL' : undefined}
             />
 
             <FormField
