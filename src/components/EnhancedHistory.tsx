@@ -9,12 +9,24 @@ import { DashboardStats } from './DashboardStats';
 interface EnhancedHistoryProps {
   apiBase: string;
   onSelectEvaluation: (evaluationId: string) => void;
+  showStats?: boolean;
 }
 
 type SortField = 'date' | 'score' | 'name';
 type SortOrder = 'asc' | 'desc';
+type ViewMode = 'flat' | 'grouped';
 
-export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistoryProps) {
+interface RepoGroup {
+  repoUrl: string;
+  repoName: string;
+  evaluations: EvaluationSummary[];
+  latestScore: number;
+  latestDate: string;
+  bestScore: number;
+  runCount: number;
+}
+
+export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showStatsProp = true }: EnhancedHistoryProps) {
   const [evaluations, setEvaluations] = useState<EvaluationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +36,9 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
   const [scoreFilter, setScoreFilter] = useState<'all' | 'excellent' | 'proficient' | 'needs-work'>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [showStats, setShowStats] = useState(true);
+  const [showStats, setShowStats] = useState(showStatsProp);
+  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
+  const [expandedRepos, setExpandedRepos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchEvaluations();
@@ -45,7 +59,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
     }
   };
 
-  // Filter and sort evaluations
+  // Filter evaluations
   const filteredEvaluations = useMemo(() => {
     let result = [...evaluations];
 
@@ -77,7 +91,76 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
       });
     }
 
-    // Sort
+    return result;
+  }, [evaluations, searchQuery, scoreFilter]);
+
+  // Group evaluations by repo
+  const groupedByRepo = useMemo(() => {
+    const groups = new Map<string, RepoGroup>();
+    
+    for (const evaluation of filteredEvaluations) {
+      const repoUrl = evaluation.repoUrl;
+      const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
+      
+      if (!groups.has(repoUrl)) {
+        groups.set(repoUrl, {
+          repoUrl,
+          repoName: extractRepoName(repoUrl),
+          evaluations: [],
+          latestScore: score,
+          latestDate: evaluation.evaluatedAt,
+          bestScore: score,
+          runCount: 0,
+        });
+      }
+      
+      const group = groups.get(repoUrl)!;
+      group.evaluations.push(evaluation);
+      group.runCount++;
+      
+      // Update best score
+      if (score > group.bestScore) {
+        group.bestScore = score;
+      }
+      
+      // Update latest
+      if (new Date(evaluation.evaluatedAt) > new Date(group.latestDate)) {
+        group.latestDate = evaluation.evaluatedAt;
+        group.latestScore = score;
+      }
+    }
+    
+    // Sort evaluations within each group by date (newest first)
+    Array.from(groups.values()).forEach(group => {
+      group.evaluations.sort((a, b) => 
+        new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime()
+      );
+    });
+    
+    // Sort groups
+    let sortedGroups = Array.from(groups.values());
+    sortedGroups.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'date':
+          comparison = new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime();
+          break;
+        case 'score':
+          comparison = b.bestScore - a.bestScore;
+          break;
+        case 'name':
+          comparison = a.repoName.localeCompare(b.repoName);
+          break;
+      }
+      return sortOrder === 'desc' ? comparison : -comparison;
+    });
+    
+    return sortedGroups;
+  }, [filteredEvaluations, sortField, sortOrder]);
+
+  // Flat sorted list
+  const sortedFlat = useMemo(() => {
+    let result = [...filteredEvaluations];
     result.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -93,20 +176,31 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
       }
       return sortOrder === 'desc' ? comparison : -comparison;
     });
-
     return result;
-  }, [evaluations, searchQuery, scoreFilter, sortField, sortOrder]);
+  }, [filteredEvaluations, sortField, sortOrder]);
+
+  const toggleRepoExpanded = (repoUrl: string) => {
+    setExpandedRepos(prev => {
+      const next = new Set(prev);
+      if (next.has(repoUrl)) {
+        next.delete(repoUrl);
+      } else {
+        next.add(repoUrl);
+      }
+      return next;
+    });
+  };
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="glass rounded-2xl shadow-xl border border-navy-100 p-6">
+        <div className="glass rounded-2xl shadow-xl border border-navy-100 p-6 dark:bg-navy-900/90 dark:border-navy-700">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-navy-100 rounded w-1/3"></div>
-            <div className="h-10 bg-navy-100 rounded"></div>
+            <div className="h-8 bg-navy-100 dark:bg-navy-700 rounded w-1/3"></div>
+            <div className="h-10 bg-navy-100 dark:bg-navy-700 rounded"></div>
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 bg-navy-100 rounded-lg"></div>
+                <div key={i} className="h-20 bg-navy-100 dark:bg-navy-700 rounded-lg"></div>
               ))}
             </div>
           </div>
@@ -117,14 +211,14 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
 
   if (error) {
     return (
-      <div className="glass rounded-2xl shadow-xl border border-navy-100 p-6">
+      <div className="glass rounded-2xl shadow-xl border border-navy-100 p-6 dark:bg-navy-900/90 dark:border-navy-700">
         <div className="text-center py-8">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-danger-100 flex items-center justify-center">
-            <svg className="w-6 h-6 text-danger-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-danger-100 dark:bg-danger-900/30 flex items-center justify-center">
+            <svg className="w-6 h-6 text-danger-600 dark:text-danger-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-danger-600 mb-4 text-sm">{error}</p>
+          <p className="text-danger-600 dark:text-danger-400 mb-4 text-sm">{error}</p>
           <button onClick={fetchEvaluations} className="px-4 py-2 bg-navy-700 text-white rounded-lg hover:bg-navy-600 transition text-sm font-medium">
             Retry
           </button>
@@ -132,6 +226,8 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
       </div>
     );
   }
+
+  const uniqueRepoCount = new Set(evaluations.map(e => e.repoUrl)).size;
 
   return (
     <div className="space-y-4">
@@ -143,20 +239,56 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
       {/* History List */}
       <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 overflow-hidden">
         {/* Header with controls */}
-        <div className="p-4 border-b border-navy-100 space-y-3">
+        <div className="p-4 border-b border-navy-100 dark:border-navy-700 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-navy-100">
-                <svg className="w-4 h-4 text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-navy-100 dark:bg-navy-700">
+                <svg className="w-4 h-4 text-navy-600 dark:text-navy-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-navy-900 dark:text-white">Evaluation History</h3>
-                <p className="text-xs text-navy-500 dark:text-navy-400">{filteredEvaluations.length} of {evaluations.length} evaluations</p>
+                <p className="text-xs text-navy-500 dark:text-navy-400">
+                  {viewMode === 'grouped' 
+                    ? `${groupedByRepo.length} repos, ${filteredEvaluations.length} runs`
+                    : `${filteredEvaluations.length} of ${evaluations.length} evaluations`
+                  }
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex bg-navy-100 dark:bg-navy-800 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('grouped')}
+                  className={`px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${
+                    viewMode === 'grouped'
+                      ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+                      : 'text-navy-600 dark:text-navy-400 hover:text-navy-800 dark:hover:text-navy-200'
+                  }`}
+                  title="Group by repo"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Grouped
+                </button>
+                <button
+                  onClick={() => setViewMode('flat')}
+                  className={`px-2 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${
+                    viewMode === 'flat'
+                      ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+                      : 'text-navy-600 dark:text-navy-400 hover:text-navy-800 dark:hover:text-navy-200'
+                  }`}
+                  title="Flat list"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  List
+                </button>
+              </div>
               <button
                 onClick={() => setShowStats(!showStats)}
                 className={`p-2 rounded-lg transition ${showStats ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400' : 'text-navy-400 hover:bg-navy-100 dark:hover:bg-navy-700'}`}
@@ -234,19 +366,127 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
         {/* Evaluation List */}
         {filteredEvaluations.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-navy-100 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-navy-100 dark:bg-navy-700 flex items-center justify-center">
               <svg className="w-8 h-8 text-navy-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <p className="text-navy-600 font-medium mb-1">No evaluations found</p>
-            <p className="text-sm text-navy-400">
+            <p className="text-navy-600 dark:text-navy-300 font-medium mb-1">No evaluations found</p>
+            <p className="text-sm text-navy-400 dark:text-navy-500">
               {searchQuery || scoreFilter !== 'all' ? 'Try adjusting your filters' : 'Submit your first evaluation to get started'}
             </p>
           </div>
+        ) : viewMode === 'grouped' ? (
+          // Grouped by Repo View
+          <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[500px] overflow-y-auto">
+            {groupedByRepo.map((group) => {
+              const isExpanded = expandedRepos.has(group.repoUrl);
+              const latestTier = getPerformanceTier(group.latestScore);
+              const bestTier = getPerformanceTier(group.bestScore);
+              
+              return (
+                <div key={group.repoUrl} className="bg-white dark:bg-navy-900">
+                  {/* Repo Header */}
+                  <div
+                    className="px-4 py-3 hover:bg-navy-50/50 dark:hover:bg-navy-800/50 cursor-pointer transition"
+                    onClick={() => toggleRepoExpanded(group.repoUrl)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button className="p-1 hover:bg-navy-100 dark:hover:bg-navy-700 rounded transition flex-shrink-0">
+                          <svg 
+                            className={`w-4 h-4 text-navy-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-semibold text-navy-900 dark:text-white truncate">
+                              {group.repoName}
+                            </span>
+                            <span className="text-xs text-navy-400 dark:text-navy-500 flex-shrink-0">
+                              {group.runCount} run{group.runCount !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-navy-500 dark:text-navy-400">
+                            <span className="flex items-center gap-1">
+                              <span className="text-navy-400">Latest:</span>
+                              <Badge variant={latestTier.variant as 'success' | 'warning' | 'danger'} size="sm">
+                                {group.latestScore}/90
+                              </Badge>
+                            </span>
+                            {group.bestScore !== group.latestScore && (
+                              <span className="flex items-center gap-1">
+                                <span className="text-navy-400">Best:</span>
+                                <Badge variant={bestTier.variant as 'success' | 'warning' | 'danger'} size="sm">
+                                  {group.bestScore}/90
+                                </Badge>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-navy-400 dark:text-navy-500 flex-shrink-0 ml-2">
+                        {formatDate(group.latestDate)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Expanded Runs */}
+                  {isExpanded && (
+                    <div className="bg-navy-50/50 dark:bg-navy-800/30 border-t border-navy-100 dark:border-navy-700">
+                      {group.evaluations.map((evaluation, idx) => {
+                        const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
+                        const tier = getPerformanceTier(score);
+                        const isLatest = idx === 0;
+                        
+                        return (
+                          <div
+                            key={evaluation.evaluationId}
+                            className="pl-12 pr-4 py-2 hover:bg-navy-100/50 dark:hover:bg-navy-700/50 cursor-pointer transition border-b border-navy-100/50 dark:border-navy-700/50 last:border-b-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectEvaluation(evaluation.evaluationId);
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {isLatest && (
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400 rounded">
+                                    LATEST
+                                  </span>
+                                )}
+                                <Badge variant={tier.variant as 'success' | 'warning' | 'danger'} size="sm">
+                                  {score}/90
+                                </Badge>
+                                <span className="text-xs font-mono text-navy-400 dark:text-navy-500">
+                                  {evaluation.evaluationId}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-navy-400 dark:text-navy-500">
+                                  {formatDate(evaluation.evaluatedAt)}
+                                </span>
+                                <svg className="w-4 h-4 text-navy-300 dark:text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[400px] overflow-y-auto">
-            {filteredEvaluations.map((evaluation) => {
+          // Flat List View
+          <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[500px] overflow-y-auto">
+            {sortedFlat.map((evaluation) => {
               const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
               const tier = getPerformanceTier(score);
               return (
@@ -289,4 +529,3 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation }: EnhancedHistory
     </div>
   );
 }
-
