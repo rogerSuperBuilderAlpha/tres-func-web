@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { EvaluationSummary } from '@/types';
-import { getPerformanceTier, formatDate, extractRepoName } from '@/lib/utils';
-import { Badge } from '@/components/ui';
+import { extractRepoName } from '@/lib/utils';
 import { DashboardStats } from './DashboardStats';
+import { HistoryFilters, EvaluationListItem, RepoGroupItem } from './history';
 
 interface EnhancedHistoryProps {
   apiBase: string;
@@ -15,6 +15,7 @@ interface EnhancedHistoryProps {
 type SortField = 'date' | 'score' | 'name';
 type SortOrder = 'asc' | 'desc';
 type ViewMode = 'flat' | 'grouped';
+type ScoreFilter = 'all' | 'excellent' | 'proficient' | 'needs-work';
 
 interface RepoGroup {
   repoUrl: string;
@@ -33,7 +34,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [scoreFilter, setScoreFilter] = useState<'all' | 'excellent' | 'proficient' | 'needs-work'>('all');
+  const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showStats, setShowStats] = useState(showStatsProp);
@@ -63,7 +64,6 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
   const filteredEvaluations = useMemo(() => {
     let result = [...evaluations];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -74,19 +74,14 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
       );
     }
 
-    // Score filter
     if (scoreFilter !== 'all') {
       result = result.filter((e) => {
         const score = e.rubricScore ?? e.overallScore ?? 0;
         switch (scoreFilter) {
-          case 'excellent':
-            return score >= 75;
-          case 'proficient':
-            return score >= 54 && score < 75;
-          case 'needs-work':
-            return score < 54;
-          default:
-            return true;
+          case 'excellent': return score >= 75;
+          case 'proficient': return score >= 54 && score < 75;
+          case 'needs-work': return score < 54;
+          default: return true;
         }
       });
     }
@@ -118,39 +113,26 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
       group.evaluations.push(evaluation);
       group.runCount++;
       
-      // Update best score
-      if (score > group.bestScore) {
-        group.bestScore = score;
-      }
-      
-      // Update latest
+      if (score > group.bestScore) group.bestScore = score;
       if (new Date(evaluation.evaluatedAt) > new Date(group.latestDate)) {
         group.latestDate = evaluation.evaluatedAt;
         group.latestScore = score;
       }
     }
     
-    // Sort evaluations within each group by date (newest first)
     Array.from(groups.values()).forEach(group => {
       group.evaluations.sort((a, b) => 
         new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime()
       );
     });
     
-    // Sort groups
     let sortedGroups = Array.from(groups.values());
     sortedGroups.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
-        case 'date':
-          comparison = new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime();
-          break;
-        case 'score':
-          comparison = b.bestScore - a.bestScore;
-          break;
-        case 'name':
-          comparison = a.repoName.localeCompare(b.repoName);
-          break;
+        case 'date': comparison = new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime(); break;
+        case 'score': comparison = b.bestScore - a.bestScore; break;
+        case 'name': comparison = a.repoName.localeCompare(b.repoName); break;
       }
       return sortOrder === 'desc' ? comparison : -comparison;
     });
@@ -164,15 +146,9 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
     result.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
-        case 'date':
-          comparison = new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime();
-          break;
-        case 'score':
-          comparison = (b.rubricScore ?? b.overallScore ?? 0) - (a.rubricScore ?? a.overallScore ?? 0);
-          break;
-        case 'name':
-          comparison = extractRepoName(a.repoUrl).localeCompare(extractRepoName(b.repoUrl));
-          break;
+        case 'date': comparison = new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime(); break;
+        case 'score': comparison = (b.rubricScore ?? b.overallScore ?? 0) - (a.rubricScore ?? a.overallScore ?? 0); break;
+        case 'name': comparison = extractRepoName(a.repoUrl).localeCompare(extractRepoName(b.repoUrl)); break;
       }
       return sortOrder === 'desc' ? comparison : -comparison;
     });
@@ -182,11 +158,8 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
   const toggleRepoExpanded = (repoUrl: string) => {
     setExpandedRepos(prev => {
       const next = new Set(prev);
-      if (next.has(repoUrl)) {
-        next.delete(repoUrl);
-      } else {
-        next.add(repoUrl);
-      }
+      if (next.has(repoUrl)) next.delete(repoUrl);
+      else next.add(repoUrl);
       return next;
     });
   };
@@ -227,18 +200,12 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
     );
   }
 
-  const uniqueRepoCount = new Set(evaluations.map(e => e.repoUrl)).size;
-
   return (
     <div className="space-y-4">
-      {/* Stats Section */}
-      {showStats && evaluations.length > 0 && (
-        <DashboardStats evaluations={evaluations} />
-      )}
+      {showStats && evaluations.length > 0 && <DashboardStats evaluations={evaluations} />}
 
-      {/* History List */}
       <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 overflow-hidden">
-        {/* Header with controls */}
+        {/* Header */}
         <div className="p-4 border-b border-navy-100 dark:border-navy-700 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -310,57 +277,15 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by repo name or ID..."
-              className="w-full pl-10 pr-4 py-2 bg-navy-50 dark:bg-navy-800 border border-navy-200 dark:border-navy-600 rounded-lg focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 dark:text-navy-100 placeholder:text-navy-400 dark:placeholder:text-navy-500"
-            />
-          </div>
-
-          {/* Filters and Sort */}
-          <div className="flex flex-wrap gap-2">
-            {/* Score Filter */}
-            <div className="flex bg-navy-100 dark:bg-navy-800 rounded-lg p-0.5">
-              {(['all', 'excellent', 'proficient', 'needs-work'] as const).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setScoreFilter(filter)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition ${
-                    scoreFilter === filter
-                      ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
-                      : 'text-navy-600 dark:text-navy-400 hover:text-navy-800 dark:hover:text-navy-200'
-                  }`}
-                >
-                  {filter === 'all' ? 'All' : filter === 'needs-work' ? 'Needs Work' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {/* Sort */}
-            <select
-              value={`${sortField}-${sortOrder}`}
-              onChange={(e) => {
-                const [field, order] = e.target.value.split('-') as [SortField, SortOrder];
-                setSortField(field);
-                setSortOrder(order);
-              }}
-              className="px-3 py-1 text-xs font-medium bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-300 border-none rounded-lg focus:ring-2 focus:ring-gold-400"
-            >
-              <option value="date-desc">Newest first</option>
-              <option value="date-asc">Oldest first</option>
-              <option value="score-desc">Highest score</option>
-              <option value="score-asc">Lowest score</option>
-              <option value="name-asc">Name A-Z</option>
-              <option value="name-desc">Name Z-A</option>
-            </select>
-          </div>
+          <HistoryFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            scoreFilter={scoreFilter}
+            onScoreFilterChange={setScoreFilter}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortChange={(field, order) => { setSortField(field); setSortOrder(order); }}
+          />
         </div>
 
         {/* Evaluation List */}
@@ -377,152 +302,26 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
             </p>
           </div>
         ) : viewMode === 'grouped' ? (
-          // Grouped by Repo View
           <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[500px] overflow-y-auto">
-            {groupedByRepo.map((group) => {
-              const isExpanded = expandedRepos.has(group.repoUrl);
-              const latestTier = getPerformanceTier(group.latestScore);
-              const bestTier = getPerformanceTier(group.bestScore);
-              
-              return (
-                <div key={group.repoUrl} className="bg-white dark:bg-navy-900">
-                  {/* Repo Header */}
-                  <div
-                    className="px-4 py-3 hover:bg-navy-50/50 dark:hover:bg-navy-800/50 cursor-pointer transition"
-                    onClick={() => toggleRepoExpanded(group.repoUrl)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button className="p-1 hover:bg-navy-100 dark:hover:bg-navy-700 rounded transition flex-shrink-0">
-                          <svg 
-                            className={`w-4 h-4 text-navy-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-sm font-semibold text-navy-900 dark:text-white truncate">
-                              {group.repoName}
-                            </span>
-                            <span className="text-xs text-navy-400 dark:text-navy-500 flex-shrink-0">
-                              {group.runCount} run{group.runCount !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-navy-500 dark:text-navy-400">
-                            <span className="flex items-center gap-1">
-                              <span className="text-navy-400">Latest:</span>
-                              <Badge variant={latestTier.variant as 'success' | 'warning' | 'danger'} size="sm">
-                                {group.latestScore}/90
-                              </Badge>
-                            </span>
-                            {group.bestScore !== group.latestScore && (
-                              <span className="flex items-center gap-1">
-                                <span className="text-navy-400">Best:</span>
-                                <Badge variant={bestTier.variant as 'success' | 'warning' | 'danger'} size="sm">
-                                  {group.bestScore}/90
-                                </Badge>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-xs text-navy-400 dark:text-navy-500 flex-shrink-0 ml-2">
-                        {formatDate(group.latestDate)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Expanded Runs */}
-                  {isExpanded && (
-                    <div className="bg-navy-50/50 dark:bg-navy-800/30 border-t border-navy-100 dark:border-navy-700">
-                      {group.evaluations.map((evaluation, idx) => {
-                        const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
-                        const tier = getPerformanceTier(score);
-                        const isLatest = idx === 0;
-                        
-                        return (
-                          <div
-                            key={evaluation.evaluationId}
-                            className="pl-12 pr-4 py-2 hover:bg-navy-100/50 dark:hover:bg-navy-700/50 cursor-pointer transition border-b border-navy-100/50 dark:border-navy-700/50 last:border-b-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectEvaluation(evaluation.evaluationId);
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {isLatest && (
-                                  <span className="text-[10px] font-medium px-1.5 py-0.5 bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400 rounded">
-                                    LATEST
-                                  </span>
-                                )}
-                                <Badge variant={tier.variant as 'success' | 'warning' | 'danger'} size="sm">
-                                  {score}/90
-                                </Badge>
-                                <span className="text-xs font-mono text-navy-400 dark:text-navy-500">
-                                  {evaluation.evaluationId}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs text-navy-400 dark:text-navy-500">
-                                  {formatDate(evaluation.evaluatedAt)}
-                                </span>
-                                <svg className="w-4 h-4 text-navy-300 dark:text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {groupedByRepo.map((group) => (
+              <RepoGroupItem
+                key={group.repoUrl}
+                group={group}
+                isExpanded={expandedRepos.has(group.repoUrl)}
+                onToggle={() => toggleRepoExpanded(group.repoUrl)}
+                onSelectEvaluation={onSelectEvaluation}
+              />
+            ))}
           </div>
         ) : (
-          // Flat List View
           <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[500px] overflow-y-auto">
-            {sortedFlat.map((evaluation) => {
-              const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
-              const tier = getPerformanceTier(score);
-              return (
-                <div
-                  key={evaluation.evaluationId}
-                  className="px-4 py-3 hover:bg-navy-50/50 dark:hover:bg-navy-800/50 cursor-pointer transition group"
-                  onClick={() => onSelectEvaluation(evaluation.evaluationId)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={tier.variant as 'success' | 'warning' | 'danger'} size="sm">
-                          {tier.label}
-                        </Badge>
-                        <span className="text-sm font-mono font-semibold text-navy-700 dark:text-navy-300">{score}/90</span>
-                      </div>
-                      <p className="text-sm text-navy-800 dark:text-navy-200 truncate font-medium group-hover:text-navy-900 dark:group-hover:text-white">
-                        {extractRepoName(evaluation.repoUrl)}
-                      </p>
-                      <p className="text-xs text-navy-400 dark:text-navy-500 mt-0.5">{formatDate(evaluation.evaluatedAt)}</p>
-                      {evaluation.criticalFailuresCount > 0 && (
-                        <p className="text-xs text-danger-600 dark:text-danger-400 mt-1 flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                          {evaluation.criticalFailuresCount} critical
-                        </p>
-                      )}
-                    </div>
-                    <svg className="w-5 h-5 text-navy-300 dark:text-navy-600 group-hover:text-navy-500 dark:group-hover:text-navy-400 transition ml-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              );
-            })}
+            {sortedFlat.map((evaluation) => (
+              <EvaluationListItem
+                key={evaluation.evaluationId}
+                evaluation={evaluation}
+                onClick={() => onSelectEvaluation(evaluation.evaluationId)}
+              />
+            ))}
           </div>
         )}
       </div>
