@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import type { EvaluationReportData, ManualReview, CriticalIssue } from '@/types';
+import { getScoreTierGradient, getScoreColor } from '@/lib/utils';
+import { AccordionItem, ReviewCard, ReviewDetailModal, ScoreCard } from './report';
 
 // Helper to normalize critical issues (handles both string and object formats)
 function formatCriticalIssue(issue: string | CriticalIssue): string {
   if (typeof issue === 'string') {
     return issue;
   }
-  // Handle object format from AI evaluation
   const description = issue.description || issue.issue || 'Unknown issue';
   const severity = issue.severity ? `[${issue.severity.toUpperCase()}]` : '';
   const category = issue.category || issue.type || '';
@@ -22,8 +23,6 @@ function formatCriticalIssue(issue: string | CriticalIssue): string {
   }
   return description;
 }
-import { getScoreTierGradient, getScoreColor, getScoreBg, getGradeLabel, formatDate } from '@/lib/utils';
-import { Spinner } from '@/components/ui';
 
 interface EvaluationReportProps {
   report: EvaluationReportData;
@@ -34,240 +33,26 @@ interface EvaluationReportProps {
   manualReviews?: ManualReview[];
 }
 
-// Checklist label mapping
-const CHECKLIST_LABELS: Record<string, string> = {
-  code_review: 'Code Review',
-  readme_check: 'README Check',
-  manual_test: 'Manual Test',
-  edge_cases: 'Edge Cases',
-  security_check: 'Security',
-  ui_ux: 'UI/UX',
-  error_handling: 'Error Handling',
-  score_fair: 'Score Verified',
+// Rubric configuration
+const RUBRIC_LABELS: Record<string, { label: string; max: number; icon: string }> = {
+  coreFunctionality: { label: 'Core Functionality', max: 20, icon: '⚡' },
+  errorHandling: { label: 'Error Handling', max: 20, icon: '🛡️' },
+  uxAccessibility: { label: 'UX & Accessibility', max: 20, icon: '✨' },
+  codeQuality: { label: 'Code Quality', max: 10, icon: '📐' },
+  security: { label: 'Security', max: 10, icon: '🔒' },
+  deploymentCompliance: { label: 'Deployment', max: 10, icon: '🚀' },
 };
 
-// Full checklist labels for modal
-const CHECKLIST_FULL_LABELS: Record<string, string> = {
-  code_review: 'Reviewed code structure and organization',
-  readme_check: 'Verified README has clear setup instructions',
-  manual_test: 'Manually tested the deployed application',
-  edge_cases: 'Tested edge cases not covered by automation',
-  security_check: 'Checked for obvious security issues',
-  ui_ux: 'Assessed UI/UX quality and responsiveness',
-  error_handling: 'Verified error handling behavior',
-  score_fair: 'Confirmed automated scores seem fair',
+const RUBRIC_TO_SUITE_MAP: Record<string, string[]> = {
+  coreFunctionality: ['functional', 'imageEdgeCases'],
+  errorHandling: ['formInput', 'resilience', 'imageEdgeCases'],
+  uxAccessibility: ['uxTest', 'resilience'],
+  codeQuality: ['repoAnalysis', 'aiReview'],
+  security: ['security'],
+  deploymentCompliance: ['deployment', 'repoAnalysis'],
 };
 
-// Answer question labels
-const ANSWER_LABELS: Record<string, string> = {
-  strengths: 'Notable Strengths',
-  concerns: 'Concerns Found',
-  recommendation: 'Overall Assessment',
-  notes: 'Additional Notes',
-};
-
-// Review detail modal
-function ReviewDetailModal({ review, onClose }: { review: ManualReview; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-navy-950/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative glass rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-navy-200">
-          {/* Header */}
-          <div className="sticky top-0 glass border-b border-navy-200 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-navy-900">Manual Review</h2>
-                <p className="text-sm text-navy-500">by {review.reviewerName || 'Reviewer'} • {formatDate(review.reviewedAt)}</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="p-2 text-navy-400 hover:text-navy-600 hover:bg-navy-100 rounded-lg transition">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="overflow-y-auto p-6 space-y-6" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-            {/* Checklist */}
-            <div>
-              <h3 className="font-semibold text-navy-900 mb-3">Completed Checks ({review.checklist.length}/8)</h3>
-              <div className="bg-navy-50 rounded-xl p-4 space-y-2">
-                {review.checklist.map(id => (
-                  <div key={id} className="flex items-center gap-2 text-sm text-navy-700">
-                    <svg className="w-4 h-4 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {CHECKLIST_FULL_LABELS[id] || id}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Answers */}
-            {Object.entries(review.answers)
-              .filter(([, value]) => value && value.trim())
-              .map(([key, value]) => (
-                <div key={key}>
-                  <h3 className="font-semibold text-navy-900 mb-2">{ANSWER_LABELS[key] || key}</h3>
-                  <div className="bg-white rounded-xl border border-navy-200 p-4">
-                    <p className="text-sm text-navy-700 whitespace-pre-wrap">{value}</p>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Review card component
-function ReviewCard({ review, onClick }: { review: ManualReview; onClick: () => void }) {
-  const assessmentPreview = review.answers.recommendation || review.answers.strengths || review.answers.notes || '';
-  const truncated = assessmentPreview.length > 80 ? assessmentPreview.slice(0, 80) + '...' : assessmentPreview;
-  
-  return (
-    <button
-      onClick={onClick}
-      className="bg-white rounded-xl border border-navy-200 p-4 text-left hover:shadow-md hover:border-gold-300 transition group"
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-navy-800">{review.reviewerName || 'Reviewer'}</span>
-        <span className="text-xs text-navy-400">{formatDate(review.reviewedAt).split(',')[0]}</span>
-      </div>
-      <p className="text-xs text-navy-600 mb-3 line-clamp-2">{truncated || 'No notes'}</p>
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1 flex-wrap">
-          {review.checklist.slice(0, 3).map(id => (
-            <span key={id} className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded">
-              {CHECKLIST_LABELS[id] || id}
-            </span>
-          ))}
-          {review.checklist.length > 3 && (
-            <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded">
-              +{review.checklist.length - 3}
-            </span>
-          )}
-        </div>
-        <svg className="w-4 h-4 text-navy-300 group-hover:text-gold-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
-    </button>
-  );
-}
-
-// Clean accordion item
-function AccordionItem({ 
-  title, 
-  count,
-  countColor = 'bg-navy-100 text-navy-600',
-  children, 
-  defaultOpen = false 
-}: { 
-  title: string;
-  count?: number;
-  countColor?: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="border-b border-navy-100 last:border-b-0">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-4 text-left group"
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-navy-700">{title}</span>
-          {count !== undefined && count > 0 && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${countColor}`}>
-              {count}
-            </span>
-          )}
-        </div>
-        <svg 
-          className={`w-5 h-5 text-navy-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isOpen && (
-        <div className="pb-4">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// PDF Status component for header
-export function PdfStatusButton({ 
-  pdfStatus, 
-  pdfUrl, 
-  onRetryPdf 
-}: { 
-  pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
-  pdfUrl?: string;
-  onRetryPdf?: () => void;
-}) {
-  if (pdfStatus === 'ready' && pdfUrl) {
-    return (
-      <a
-        href={pdfUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-navy-700 to-navy-900 text-white rounded-lg hover:from-navy-600 hover:to-navy-800 transition text-sm font-medium shadow-md"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <span className="hidden sm:inline">Download PDF</span>
-      </a>
-    );
-  }
-  
-  if (pdfStatus === 'generating') {
-    return (
-      <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-navy-100 text-navy-600 rounded-lg text-sm font-medium">
-        <Spinner size="sm" />
-        <span className="hidden sm:inline">Generating...</span>
-      </div>
-    );
-  }
-  
-  if (pdfStatus === 'failed') {
-    return (
-      <button
-        onClick={onRetryPdf}
-        className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-danger-100 text-danger-700 rounded-lg hover:bg-danger-200 transition text-sm font-medium"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        <span className="hidden sm:inline">Retry PDF</span>
-      </button>
-    );
-  }
-  
-  return (
-    <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-navy-100 text-navy-400 rounded-lg text-sm">
-      <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-      <span className="hidden sm:inline">PDF pending...</span>
-    </div>
-  );
-}
+export { PdfStatusButton } from './report/PdfStatusButton';
 
 export function EvaluationReport({ report, manualReviews = [] }: EvaluationReportProps) {
   const [selectedReview, setSelectedReview] = useState<ManualReview | null>(null);
@@ -276,42 +61,22 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
   const maxScore = hasRubric ? 90 : 100;
   const scoreTier = getScoreTierGradient(overallScore, maxScore);
 
-  const rubricLabels: Record<string, { label: string; max: number; icon: string }> = {
-    coreFunctionality: { label: 'Core Functionality', max: 20, icon: '⚡' },
-    errorHandling: { label: 'Error Handling', max: 20, icon: '🛡️' },
-    uxAccessibility: { label: 'UX & Accessibility', max: 20, icon: '✨' },
-    codeQuality: { label: 'Code Quality', max: 10, icon: '📐' },
-    security: { label: 'Security', max: 10, icon: '🔒' },
-    deploymentCompliance: { label: 'Deployment', max: 10, icon: '🚀' },
-  };
-
-  const rubricToSuiteMap: Record<string, string[]> = {
-    coreFunctionality: ['functional', 'imageEdgeCases'],
-    errorHandling: ['formInput', 'resilience', 'imageEdgeCases'],
-    uxAccessibility: ['uxTest', 'resilience'],
-    codeQuality: ['repoAnalysis', 'aiReview'],
-    security: ['security'],
-    deploymentCompliance: ['deployment', 'repoAnalysis'],
-  };
-
   const getRubricAssessment = (rubricKey: string): string => {
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
     if (!suites) return 'Assessment data not available';
     
-    // Get the actual score for context
     const rubric = report.scores?.rubric as Record<string, number> | undefined;
     const score = rubric?.[rubricKey] || 0;
-    const maxScore = rubricLabels[rubricKey]?.max || 20;
+    const maxScore = RUBRIC_LABELS[rubricKey]?.max || 20;
     const percentage = Math.round((score / maxScore) * 100);
 
-    for (const suiteKey of (rubricToSuiteMap[rubricKey] || [])) {
+    for (const suiteKey of (RUBRIC_TO_SUITE_MAP[rubricKey] || [])) {
       const suite = suites[suiteKey];
       const aiAnalysis = suite?.aiAnalysis as { explanation?: string; keyFindings?: string[] } | undefined;
       if (aiAnalysis?.explanation) {
         const findings = aiAnalysis.keyFindings?.slice(0, 2) || [];
         let explanation = findings.length > 0 ? `${aiAnalysis.explanation} ${findings.join('. ')}` : aiAnalysis.explanation;
         
-        // Add score context if AI explanation seems too positive for a low score
         if (percentage < 60 && !explanation.toLowerCase().includes('issue') && !explanation.toLowerCase().includes('fail') && !explanation.toLowerCase().includes('crash')) {
           const qualifier = percentage < 40 ? 'Significant room for improvement.' : 'Some areas need work.';
           explanation = `${explanation} ${qualifier}`;
@@ -321,15 +86,15 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
       }
     }
 
+    // Fallback assessments
     switch (rubricKey) {
       case 'coreFunctionality': {
         const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
         if (!func) return 'Functional tests completed';
         const passed = [func.scenarioA_Match?.passed, func.scenarioB_BrandMismatch?.passed, func.scenarioC_AbvMismatch?.passed].filter(Boolean).length;
         const baseText = passed === 3 ? 'All core verification scenarios pass.' : passed === 0 ? 'Core verification logic not working.' : `${passed}/3 scenarios passed.`;
-        // Add context based on actual score
         if (passed === 3 && percentage < 60) {
-          return `${baseText} Additional scoring factors (format tolerance, image handling, detailed feedback) need improvement.`;
+          return `${baseText} Additional scoring factors need improvement.`;
         }
         return baseText;
       }
@@ -396,7 +161,7 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
             <p className="text-navy-500 mt-1">out of {maxScore} points</p>
           </div>
 
-          {/* Links & Details - Moved above AI Assessment */}
+          {/* Links & Details */}
           <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
             <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-navy-100 flex items-center justify-center">
@@ -410,7 +175,7 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
               <div>
                 <p className="text-xs text-navy-400 mb-1">Repository</p>
                 <a href={report.repoUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block">
-                  {(report.repoUrl || '').replace('https://github.com/', '')}
+                  {(report.repoUrl || '').replace('https://github.com/', '').replace('https://gitlab.com/', '')}
                 </a>
               </div>
               <div>
@@ -456,7 +221,7 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
             </div>
           )}
 
-          {/* Critical Issues - Always visible if present */}
+          {/* Critical Issues */}
           {((report.criticalIssues?.length ?? 0) > 0 || (report.criticalFailures?.length ?? 0) > 0) && (
             <div className="bg-danger-50 rounded-xl border border-danger-200 p-4 mb-6">
               <h3 className="text-sm font-semibold text-danger-700 mb-3 flex items-center gap-2">
@@ -512,7 +277,6 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
               </AccordionItem>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -554,37 +318,16 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
             {hasRubric && Object.entries(report.scores.rubric!)
               .filter(([key]) => key !== 'overall')
               .map(([key, value]) => {
-                const rubricInfo = rubricLabels[key];
+                const rubricInfo = RUBRIC_LABELS[key];
                 if (!rubricInfo) return null;
-                const safeValue = Math.max(0, value || 0);
-                const percentage = Math.round((safeValue / rubricInfo.max) * 100);
-                const grade = getGradeLabel(percentage);
                 return (
-                  <div key={key} className="bg-white rounded-xl shadow-sm p-5 border border-navy-100 hover:shadow-md transition">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{rubricInfo.icon}</span>
-                        <span className="font-semibold text-navy-800">{rubricInfo.label}</span>
-                      </div>
-                      <span className={`text-2xl font-bold font-mono ${getScoreColor(safeValue, rubricInfo.max)}`}>
-                        {safeValue}<span className="text-sm text-navy-400">/{rubricInfo.max}</span>
-                      </span>
-                    </div>
-                    <div className="h-3 bg-navy-100 rounded-full mb-4 overflow-hidden relative">
-                      <div 
-                        className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out"
-                        style={{ 
-                          width: `${percentage}%`,
-                          minWidth: percentage > 0 ? '8px' : '0',
-                          backgroundColor: percentage >= 80 ? '#10b981' : percentage >= 60 ? '#f59e0b' : '#ef4444'
-                        }} 
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${grade.color}`}>{grade.label}</span>
-                    </div>
-                    <p className="text-sm text-navy-600 leading-relaxed mt-3">{getRubricAssessment(key)}</p>
-                  </div>
+                  <ScoreCard
+                    key={key}
+                    rubricKey={key}
+                    value={value}
+                    rubricInfo={rubricInfo}
+                    assessment={getRubricAssessment(key)}
+                  />
                 );
               })}
           </div>
