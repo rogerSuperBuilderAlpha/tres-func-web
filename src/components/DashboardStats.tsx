@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
+import { SCORE_THRESHOLDS } from '@/lib/constants';
 
 interface DashboardStatsProps {
   evaluations: EvaluationSummary[];
@@ -189,8 +190,8 @@ function calculateStats(evaluations: EvaluationSummary[]) {
     const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
     totalScore += score;
 
-    if (score >= 75) excellent++;
-    else if (score >= 54) proficient++;
+    if (score >= SCORE_THRESHOLDS.EXCELLENT_MIN) excellent++;
+    else if (score >= SCORE_THRESHOLDS.PROFICIENT_MIN) proficient++;
     else needsWork++;
 
     if (evaluation.criticalFailuresCount > 0) withCritical++;

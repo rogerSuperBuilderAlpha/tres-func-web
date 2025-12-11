@@ -2,6 +2,7 @@
  * Shared utility functions for the TTB Evaluator
  */
 import type React from 'react';
+import { SCORE_THRESHOLDS } from './constants';
 
 // ============================================
 // Validation
@@ -89,8 +90,8 @@ export type ScoreTier = {
  * Get performance tier based on score (out of 90)
  */
 export function getPerformanceTier(score: number): ScoreTier {
-  if (score >= 75) return { label: 'Excellent', color: 'bg-success-100 text-success-700 border-success-200', variant: 'success' };
-  if (score >= 54) return { label: 'Proficient', color: 'bg-warning-100 text-warning-600 border-warning-200', variant: 'warning' };
+  if (score >= SCORE_THRESHOLDS.EXCELLENT_MIN) return { label: 'Excellent', color: 'bg-success-100 text-success-700 border-success-200', variant: 'success' };
+  if (score >= SCORE_THRESHOLDS.PROFICIENT_MIN) return { label: 'Proficient', color: 'bg-warning-100 text-warning-600 border-warning-200', variant: 'warning' };
   return { label: 'Needs Work', color: 'bg-danger-100 text-danger-600 border-danger-200', variant: 'danger' };
 }
 

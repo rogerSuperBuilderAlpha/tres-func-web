@@ -4,5 +4,4 @@ export { ReviewCard } from './ReviewCard';
 export { ReviewDetailModal } from './ReviewDetailModal';
 export { PdfStatusButton } from './PdfStatusButton';
 export { ScoreCard } from './ScoreCard';
-
-
+export { QualitativeAssessmentCard } from './QualitativeAssessmentCard';

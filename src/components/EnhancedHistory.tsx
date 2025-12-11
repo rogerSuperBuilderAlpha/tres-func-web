@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import { extractRepoName } from '@/lib/utils';
+import { SCORE_THRESHOLDS } from '@/lib/constants';
 import { DashboardStats } from './DashboardStats';
 import { HistoryFilters, EvaluationListItem, RepoGroupItem } from './history';
 
@@ -80,9 +81,9 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
       result = result.filter((e) => {
         const score = e.rubricScore ?? e.overallScore ?? 0;
         switch (scoreFilter) {
-          case 'excellent': return score >= 75;
-          case 'proficient': return score >= 54 && score < 75;
-          case 'needs-work': return score < 54;
+          case 'excellent': return score >= SCORE_THRESHOLDS.EXCELLENT_MIN;
+          case 'proficient': return score >= SCORE_THRESHOLDS.PROFICIENT_MIN && score < SCORE_THRESHOLDS.EXCELLENT_MIN;
+          case 'needs-work': return score < SCORE_THRESHOLDS.PROFICIENT_MIN;
           default: return true;
         }
       });

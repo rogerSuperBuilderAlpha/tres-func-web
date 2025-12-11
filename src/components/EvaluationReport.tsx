@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { EvaluationReportData, ManualReview, CriticalIssue } from '@/types';
 import { getScoreTierGradient, getScoreColor } from '@/lib/utils';
-import { AccordionItem, ReviewCard, ReviewDetailModal, ScoreCard } from './report';
+import { AccordionItem, ReviewCard, ReviewDetailModal, ScoreCard, QualitativeAssessmentCard } from './report';
 
 // Helper to normalize critical issues (handles both string and object formats)
 function formatCriticalIssue(issue: string | CriticalIssue): string {
@@ -52,6 +52,63 @@ const RUBRIC_TO_SUITE_MAP: Record<string, string[]> = {
   deploymentCompliance: ['deployment', 'repoAnalysis'],
 };
 
+// Helper to generate fallback assessment for each rubric key
+type Suites = Record<string, Record<string, unknown>>;
+
+function getFallbackAssessment(rubricKey: string, suites: Suites, percentage: number): string {
+  switch (rubricKey) {
+    case 'coreFunctionality': {
+      const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
+      if (!func) return 'Functional tests completed';
+      const passed = [func.scenarioA_Match?.passed, func.scenarioB_BrandMismatch?.passed, func.scenarioC_AbvMismatch?.passed].filter(Boolean).length;
+      const baseText = passed === 3 ? 'All core verification scenarios pass.' : passed === 0 ? 'Core verification logic not working.' : `${passed}/3 scenarios passed.`;
+      return (passed === 3 && percentage < 60) ? `${baseText} Additional scoring factors need improvement.` : baseText;
+    }
+    case 'errorHandling': {
+      const res = suites.resilience as Record<string, unknown> | undefined;
+      const parts: string[] = [];
+      if (res?.recoversAfterError) parts.push('Recovers gracefully');
+      if (res?.rapidSubmissions) parts.push('Handles rapid submissions');
+      return parts.length > 0 ? parts.join('. ') : 'Error handling tested';
+    }
+    case 'uxAccessibility': {
+      const ux = suites.uxTest as Record<string, unknown> | undefined;
+      if (!ux) return 'UX evaluation completed';
+      const parts: string[] = [];
+      if (ux.isMobileResponsive) parts.push('Mobile responsive');
+      if (ux.hasProperHeadings) parts.push('Proper headings');
+      const loadTime = ux.loadTimeMs as number | undefined;
+      if (loadTime && loadTime < 2000) parts.push(`Fast load (${(loadTime/1000).toFixed(1)}s)`);
+      return parts.length > 0 ? parts.join('. ') : 'UX evaluated';
+    }
+    case 'codeQuality': {
+      const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
+      const parts: string[] = [];
+      if (repo?.hasTests) parts.push('Has tests');
+      if (repo?.separatesFrontendBackend) parts.push('Clean architecture');
+      return parts.length > 0 ? parts.join('. ') : 'Code analysis completed';
+    }
+    case 'security': {
+      const sec = suites.security as Record<string, Record<string, boolean>> | undefined;
+      if (!sec) return 'Security assessed';
+      const issues: string[] = [];
+      if (sec.xss?.brandNameFieldVulnerable) issues.push('XSS detected');
+      if (sec.injection?.sqlInjectionPayloadsAccepted) issues.push('SQL injection risk');
+      return issues.length > 0 ? issues.join('. ') : 'No critical vulnerabilities';
+    }
+    case 'deploymentCompliance': {
+      const dep = suites.deployment as Record<string, unknown> | undefined;
+      const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
+      const parts: string[] = [];
+      if (dep?.urlAccessible) parts.push('URL accessible');
+      if (repo?.readmeHasSetupInstructions) parts.push('README complete');
+      return parts.length > 0 ? parts.join('. ') : 'Deployment verified';
+    }
+    default:
+      return 'Assessment completed';
+  }
+}
+
 export { PdfStatusButton } from './report/PdfStatusButton';
 
 export function EvaluationReport({ report, manualReviews = [] }: EvaluationReportProps) {
@@ -62,12 +119,11 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
   const scoreTier = getScoreTierGradient(overallScore, maxScore);
 
   const getRubricAssessment = (rubricKey: string): string => {
-    const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
-    
+    const suites = report.suites as Suites | undefined;
     const rubric = report.scores?.rubric as Record<string, number> | undefined;
     const score = rubric?.[rubricKey] || 0;
-    const maxScore = RUBRIC_LABELS[rubricKey]?.max || 20;
-    const percentage = Math.round((score / maxScore) * 100);
+    const maxScoreForKey = RUBRIC_LABELS[rubricKey]?.max || 20;
+    const percentage = Math.round((score / maxScoreForKey) * 100);
 
     // First, check for overall scoreReasoning (this considers ALL tests including Playwright)
     const scoreReasoning = (report as unknown as Record<string, unknown>).scoreReasoning as Record<string, string> | undefined;
@@ -78,13 +134,10 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
     // For Core Functionality, prioritize showing Playwright results since they reflect real user experience
     if (rubricKey === 'coreFunctionality' && suites?.uxTest) {
       const uxTest = suites.uxTest as Record<string, unknown>;
-      const formInteraction = uxTest.formInteraction as { foundForm?: boolean; filledFields?: number; uploadedImage?: boolean; submissionResult?: { submitted?: boolean; responseReceived?: boolean; showedResultScreen?: boolean } } | undefined;
-      if (formInteraction?.submissionResult) {
-        const result = formInteraction.submissionResult;
-        const playwrightWorked = result.submitted && result.responseReceived && result.showedResultScreen;
-        if (playwrightWorked) {
-          return `Playwright browser tests show the application works for real users: form was found, fields were filled, image was uploaded, form was submitted successfully, and results were displayed. This indicates core functionality works from the user's perspective. HTTP API tests may have failed due to endpoint path differences, but the user-facing experience is functional.`;
-        }
+      const formInteraction = uxTest.formInteraction as { submissionResult?: { submitted?: boolean; responseReceived?: boolean; showedResultScreen?: boolean } } | undefined;
+      const result = formInteraction?.submissionResult;
+      if (result?.submitted && result?.responseReceived && result?.showedResultScreen) {
+        return `Playwright browser tests show the application works for real users: form was found, fields were filled, image was uploaded, form was submitted successfully, and results were displayed. This indicates core functionality works from the user's perspective. HTTP API tests may have failed due to endpoint path differences, but the user-facing experience is functional.`;
       }
     }
 
@@ -99,68 +152,14 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
         let explanation = findings.length > 0 ? `${aiAnalysis.explanation} ${findings.join('. ')}` : aiAnalysis.explanation;
         
         if (percentage < 60 && !explanation.toLowerCase().includes('issue') && !explanation.toLowerCase().includes('fail') && !explanation.toLowerCase().includes('crash')) {
-          const qualifier = percentage < 40 ? 'Significant room for improvement.' : 'Some areas need work.';
-          explanation = `${explanation} ${qualifier}`;
+          explanation = `${explanation} ${percentage < 40 ? 'Significant room for improvement.' : 'Some areas need work.'}`;
         }
-        
         return explanation;
       }
     }
 
-    // Fallback assessments
-    switch (rubricKey) {
-      case 'coreFunctionality': {
-        const func = suites.functional as Record<string, { passed?: boolean }> | undefined;
-        if (!func) return 'Functional tests completed';
-        const passed = [func.scenarioA_Match?.passed, func.scenarioB_BrandMismatch?.passed, func.scenarioC_AbvMismatch?.passed].filter(Boolean).length;
-        const baseText = passed === 3 ? 'All core verification scenarios pass.' : passed === 0 ? 'Core verification logic not working.' : `${passed}/3 scenarios passed.`;
-        if (passed === 3 && percentage < 60) {
-          return `${baseText} Additional scoring factors need improvement.`;
-        }
-        return baseText;
-      }
-      case 'errorHandling': {
-        const res = suites.resilience as Record<string, unknown> | undefined;
-        const parts: string[] = [];
-        if (res?.recoversAfterError) parts.push('Recovers gracefully');
-        if (res?.rapidSubmissions) parts.push('Handles rapid submissions');
-        return parts.length > 0 ? parts.join('. ') : 'Error handling tested';
-      }
-      case 'uxAccessibility': {
-        const ux = suites.uxTest as Record<string, unknown> | undefined;
-        if (!ux) return 'UX evaluation completed';
-        const parts: string[] = [];
-        if (ux.isMobileResponsive) parts.push('Mobile responsive');
-        if (ux.hasProperHeadings) parts.push('Proper headings');
-        const loadTime = ux.loadTimeMs as number | undefined;
-        if (loadTime && loadTime < 2000) parts.push(`Fast load (${(loadTime/1000).toFixed(1)}s)`);
-        return parts.length > 0 ? parts.join('. ') : 'UX evaluated';
-      }
-      case 'codeQuality': {
-        const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
-        const parts: string[] = [];
-        if (repo?.hasTests) parts.push('Has tests');
-        if (repo?.separatesFrontendBackend) parts.push('Clean architecture');
-        return parts.length > 0 ? parts.join('. ') : 'Code analysis completed';
-      }
-      case 'security': {
-        const sec = suites.security as Record<string, Record<string, boolean>> | undefined;
-        if (!sec) return 'Security assessed';
-        const issues: string[] = [];
-        if (sec.xss?.brandNameFieldVulnerable) issues.push('XSS detected');
-        if (sec.injection?.sqlInjectionPayloadsAccepted) issues.push('SQL injection risk');
-        return issues.length > 0 ? issues.join('. ') : 'No critical vulnerabilities';
-      }
-      case 'deploymentCompliance': {
-        const dep = suites.deployment as Record<string, unknown> | undefined;
-        const repo = suites.repoAnalysis as Record<string, unknown> | undefined;
-        const parts: string[] = [];
-        if (dep?.urlAccessible) parts.push('URL accessible');
-        if (repo?.readmeHasSetupInstructions) parts.push('README complete');
-        return parts.length > 0 ? parts.join('. ') : 'Deployment verified';
-      }
-      default: return 'Assessment completed';
-    }
+    // Use extracted fallback assessment helper
+    return getFallbackAssessment(rubricKey, suites, percentage);
   };
 
   return (
@@ -375,91 +374,30 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* AI-First Mindset */}
                 {report.qualitativeAssessments.aiFirstMindset && (
-                  <div className="bg-white rounded-xl shadow-sm p-5 border border-navy-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-navy-800 flex items-center gap-2">
-                        <span>🤖</span> AI-First Mindset
-                      </h4>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        report.qualitativeAssessments.aiFirstMindset.score === 'strong' ? 'bg-success-100 text-success-700' :
-                        report.qualitativeAssessments.aiFirstMindset.score === 'moderate' ? 'bg-gold-100 text-gold-700' :
-                        report.qualitativeAssessments.aiFirstMindset.score === 'weak' ? 'bg-warning-100 text-warning-700' :
-                        'bg-danger-100 text-danger-700'
-                      }`}>
-                        {report.qualitativeAssessments.aiFirstMindset.score.charAt(0).toUpperCase() + report.qualitativeAssessments.aiFirstMindset.score.slice(1)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-navy-600 mb-3">{report.qualitativeAssessments.aiFirstMindset.assessment}</p>
-                    {report.qualitativeAssessments.aiFirstMindset.positiveIndicators.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-xs font-medium text-navy-500 mb-1">Positive Indicators:</p>
-                        <ul className="space-y-1">
-                          {report.qualitativeAssessments.aiFirstMindset.positiveIndicators.map((item, i) => (
-                            <li key={i} className="text-xs text-success-600 flex items-start gap-1">
-                              <span>✓</span> {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {report.qualitativeAssessments.aiFirstMindset.negativeIndicators.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-navy-500 mb-1">Areas of Concern:</p>
-                        <ul className="space-y-1">
-                          {report.qualitativeAssessments.aiFirstMindset.negativeIndicators.map((item, i) => (
-                            <li key={i} className="text-xs text-warning-600 flex items-start gap-1">
-                              <span>!</span> {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+                  <QualitativeAssessmentCard
+                    icon="🤖"
+                    title="AI-First Mindset"
+                    score={report.qualitativeAssessments.aiFirstMindset.score}
+                    assessment={report.qualitativeAssessments.aiFirstMindset.assessment}
+                    positiveItems={report.qualitativeAssessments.aiFirstMindset.positiveIndicators}
+                    positiveLabel="Positive Indicators"
+                    negativeItems={report.qualitativeAssessments.aiFirstMindset.negativeIndicators}
+                    negativeLabel="Areas of Concern"
+                  />
                 )}
 
                 {/* Instructions Compliance */}
                 {report.qualitativeAssessments.instructionsCompliance && (
-                  <div className="bg-white rounded-xl shadow-sm p-5 border border-navy-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-navy-800 flex items-center gap-2">
-                        <span>📋</span> Instructions Compliance
-                      </h4>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        report.qualitativeAssessments.instructionsCompliance.score === 'full' ? 'bg-success-100 text-success-700' :
-                        report.qualitativeAssessments.instructionsCompliance.score === 'partial' ? 'bg-gold-100 text-gold-700' :
-                        report.qualitativeAssessments.instructionsCompliance.score === 'minimal' ? 'bg-warning-100 text-warning-700' :
-                        'bg-danger-100 text-danger-700'
-                      }`}>
-                        {report.qualitativeAssessments.instructionsCompliance.score === 'non_compliant' ? 'Non-Compliant' :
-                         report.qualitativeAssessments.instructionsCompliance.score.charAt(0).toUpperCase() + report.qualitativeAssessments.instructionsCompliance.score.slice(1)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-navy-600 mb-3">{report.qualitativeAssessments.instructionsCompliance.assessment}</p>
-                    {report.qualitativeAssessments.instructionsCompliance.compliantItems.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-xs font-medium text-navy-500 mb-1">Requirements Met:</p>
-                        <ul className="space-y-1">
-                          {report.qualitativeAssessments.instructionsCompliance.compliantItems.map((item, i) => (
-                            <li key={i} className="text-xs text-success-600 flex items-start gap-1">
-                              <span>✓</span> {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {report.qualitativeAssessments.instructionsCompliance.nonCompliantItems.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-navy-500 mb-1">Requirements Not Met:</p>
-                        <ul className="space-y-1">
-                          {report.qualitativeAssessments.instructionsCompliance.nonCompliantItems.map((item, i) => (
-                            <li key={i} className="text-xs text-danger-600 flex items-start gap-1">
-                              <span>✗</span> {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+                  <QualitativeAssessmentCard
+                    icon="📋"
+                    title="Instructions Compliance"
+                    score={report.qualitativeAssessments.instructionsCompliance.score}
+                    assessment={report.qualitativeAssessments.instructionsCompliance.assessment}
+                    positiveItems={report.qualitativeAssessments.instructionsCompliance.compliantItems}
+                    positiveLabel="Requirements Met"
+                    negativeItems={report.qualitativeAssessments.instructionsCompliance.nonCompliantItems}
+                    negativeLabel="Requirements Not Met"
+                  />
                 )}
               </div>
             </div>

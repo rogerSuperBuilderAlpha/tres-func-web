@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { TestProgress, DetailedProgress } from '@/types';
+import { TIME_THRESHOLDS } from '@/lib/constants';
 
 // Re-export types for backward compatibility
 export type { TestProgress, DetailedProgress } from '@/types';
@@ -15,10 +16,41 @@ interface EvaluationStatusProps {
   deployedUrl?: string;
 }
 
-// Time thresholds (adjusted for Claude Sonnet 4.5 - average run ~10 minutes)
-const WARNING_THRESHOLD = 480; // 8 minutes - show warning
-const CRITICAL_THRESHOLD = 720; // 12 minutes - show critical status
-const STUCK_THRESHOLD = 240; // 4 minutes on same test = stuck (AI calls take longer)
+// Status level styling helper - reduces repeated ternary chains
+type StatusLevel = 'normal' | 'warning' | 'critical';
+
+function getStatusLevelStyles(level: StatusLevel) {
+  return {
+    bg: level === 'critical' ? 'bg-danger-100 dark:bg-danger-900/30' :
+        level === 'warning' ? 'bg-warning-100 dark:bg-warning-900/30' :
+        'bg-gold-100 dark:bg-gold-900/30',
+    text: level === 'critical' ? 'text-danger-600 dark:text-danger-400' :
+          level === 'warning' ? 'text-warning-600 dark:text-warning-400' :
+          'text-gold-600 dark:text-gold-400',
+    timerText: level === 'critical' ? 'text-danger-600 dark:text-danger-400' :
+               level === 'warning' ? 'text-warning-600 dark:text-warning-400' :
+               'text-navy-800 dark:text-white',
+    progressBar: level === 'critical' ? 'bg-danger-500' :
+                 level === 'warning' ? 'bg-warning-500' :
+                 'bg-gold-500',
+  };
+}
+
+// Test status configuration - data-driven for the checklist
+const TEST_STATUS_CONFIG: { key: keyof TestProgress; label: string }[] = [
+  { key: 'preflight', label: 'Pre-flight Check' },
+  { key: 'repoAnalysis', label: 'Repo Analysis' },
+  { key: 'security', label: 'Security' },
+  { key: 'imageEdgeCases', label: 'Image Edge Cases' },
+  { key: 'formInput', label: 'Form Validation' },
+  { key: 'resilience', label: 'Resilience' },
+  { key: 'functional', label: 'Functional' },
+  { key: 'uxTest', label: 'UX Testing' },
+  { key: 'aiReview', label: 'AI Review' },
+  { key: 'deployment', label: 'Deployment' },
+  { key: 'reportGeneration', label: 'Report Gen' },
+  { key: 'pdfGeneration', label: 'PDF Report' },
+];
 
 export function EvaluationStatus({ evaluationId, progress, startTime, detailedProgress, repoUrl, deployedUrl }: EvaluationStatusProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -55,7 +87,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
 
   // Calculate stuck time
   const stuckSeconds = Math.floor((Date.now() - lastChangeTime) / 1000);
-  const isStuck = stuckSeconds > STUCK_THRESHOLD;
+  const isStuck = stuckSeconds > TIME_THRESHOLDS.STUCK;
 
   // Get currently running tests
   const runningTests = useMemo(() => {
@@ -76,11 +108,14 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
   const progressPercent = Math.round((completedCount / totalTests) * 100);
 
   // Determine status level
-  const statusLevel = useMemo(() => {
-    if (elapsedSeconds > CRITICAL_THRESHOLD || isStuck) return 'critical';
-    if (elapsedSeconds > WARNING_THRESHOLD) return 'warning';
+  const statusLevel: StatusLevel = useMemo(() => {
+    if (elapsedSeconds > TIME_THRESHOLDS.CRITICAL || isStuck) return 'critical';
+    if (elapsedSeconds > TIME_THRESHOLDS.WARNING) return 'warning';
     return 'normal';
   }, [elapsedSeconds, isStuck]);
+
+  // Get styles for current status level
+  const statusStyles = getStatusLevelStyles(statusLevel);
 
   // Format running test name
   const currentTestName = runningTests.length > 0 
@@ -109,27 +144,15 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
           <div className="lg:col-span-3 p-5">
             <div className="flex flex-col items-center text-center">
               {/* Spinning indicator */}
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-                statusLevel === 'critical' ? 'bg-danger-100 dark:bg-danger-900/30' :
-                statusLevel === 'warning' ? 'bg-warning-100 dark:bg-warning-900/30' :
-                'bg-gold-100 dark:bg-gold-900/30'
-              }`}>
-                <svg className={`animate-spin h-8 w-8 ${
-                  statusLevel === 'critical' ? 'text-danger-600 dark:text-danger-400' :
-                  statusLevel === 'warning' ? 'text-warning-600 dark:text-warning-400' :
-                  'text-gold-600 dark:text-gold-400'
-                }`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${statusStyles.bg}`}>
+                <svg className={`animate-spin h-8 w-8 ${statusStyles.text}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
               
               {/* Timer */}
-              <div className={`text-4xl font-mono font-bold mb-1 ${
-                statusLevel === 'critical' ? 'text-danger-600 dark:text-danger-400' :
-                statusLevel === 'warning' ? 'text-warning-600 dark:text-warning-400' :
-                'text-navy-800 dark:text-white'
-              }`}>
+              <div className={`text-4xl font-mono font-bold mb-1 ${statusStyles.timerText}`}>
                 {elapsedMinutes}:{remainingSeconds.toString().padStart(2, '0')}
               </div>
               <p className="text-xs text-navy-500 dark:text-navy-400 mb-4">Elapsed</p>
@@ -142,11 +165,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
                 </div>
                 <div className="w-full bg-navy-200 dark:bg-navy-700 rounded-full h-2.5">
                   <div
-                    className={`h-2.5 rounded-full transition-all duration-500 ${
-                      statusLevel === 'critical' ? 'bg-danger-500' :
-                      statusLevel === 'warning' ? 'bg-warning-500' :
-                      'bg-gold-500'
-                    }`}
+                    className={`h-2.5 rounded-full transition-all duration-500 ${statusStyles.progressBar}`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -275,18 +294,14 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
               Test Status
             </h3>
             <div className="space-y-2">
-              <StatusItem label="Pre-flight Check" status={progress?.preflight || 'pending'} isStuck={isStuck && runningTests.includes('preflight')} />
-              <StatusItem label="Repo Analysis" status={progress?.repoAnalysis || 'pending'} isStuck={isStuck && runningTests.includes('repoAnalysis')} />
-              <StatusItem label="Security" status={progress?.security || 'pending'} isStuck={isStuck && runningTests.includes('security')} />
-              <StatusItem label="Image Edge Cases" status={progress?.imageEdgeCases || 'pending'} isStuck={isStuck && runningTests.includes('imageEdgeCases')} />
-              <StatusItem label="Form Validation" status={progress?.formInput || 'pending'} isStuck={isStuck && runningTests.includes('formInput')} />
-              <StatusItem label="Resilience" status={progress?.resilience || 'pending'} isStuck={isStuck && runningTests.includes('resilience')} />
-              <StatusItem label="Functional" status={progress?.functional || 'pending'} isStuck={isStuck && runningTests.includes('functional')} />
-              <StatusItem label="UX Testing" status={progress?.uxTest || 'pending'} isStuck={isStuck && runningTests.includes('uxTest')} />
-              <StatusItem label="AI Review" status={progress?.aiReview || 'pending'} isStuck={isStuck && runningTests.includes('aiReview')} />
-              <StatusItem label="Deployment" status={progress?.deployment || 'pending'} isStuck={isStuck && runningTests.includes('deployment')} />
-              <StatusItem label="Report Gen" status={progress?.reportGeneration || 'pending'} isStuck={isStuck && runningTests.includes('reportGeneration')} />
-              <StatusItem label="PDF Report" status={progress?.pdfGeneration || 'pending'} isStuck={isStuck && runningTests.includes('pdfGeneration')} />
+              {TEST_STATUS_CONFIG.map(({ key, label }) => (
+                <StatusItem
+                  key={key}
+                  label={label}
+                  status={progress?.[key] || 'pending'}
+                  isStuck={isStuck && runningTests.includes(key)}
+                />
+              ))}
             </div>
 
             {/* Typical time note */}
