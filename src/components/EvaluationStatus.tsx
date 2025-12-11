@@ -11,14 +11,16 @@ interface EvaluationStatusProps {
   progress?: TestProgress;
   startTime?: string;
   detailedProgress?: DetailedProgress[];
+  repoUrl?: string;
+  deployedUrl?: string;
 }
 
-// Time thresholds (adjusted for Claude Sonnet 4.5 which produces more detailed responses)
-const WARNING_THRESHOLD = 360; // 6 minutes - show warning
-const CRITICAL_THRESHOLD = 540; // 9 minutes - show critical status
-const STUCK_THRESHOLD = 180; // 3 minutes on same test = stuck (AI calls take longer)
+// Time thresholds (adjusted for Claude Sonnet 4.5 - average run ~10 minutes)
+const WARNING_THRESHOLD = 480; // 8 minutes - show warning
+const CRITICAL_THRESHOLD = 720; // 12 minutes - show critical status
+const STUCK_THRESHOLD = 240; // 4 minutes on same test = stuck (AI calls take longer)
 
-export function EvaluationStatus({ evaluationId, progress, startTime, detailedProgress }: EvaluationStatusProps) {
+export function EvaluationStatus({ evaluationId, progress, startTime, detailedProgress, repoUrl, deployedUrl }: EvaluationStatusProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [lastChangeTime, setLastChangeTime] = useState(Date.now());
   const [lastProgress, setLastProgress] = useState<TestProgress | undefined>(undefined);
@@ -164,19 +166,65 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
                   </p>
                 )}
               </div>
+
+              {/* Links for manual testing */}
+              {(repoUrl || deployedUrl) && (
+                <div className="mt-4 pt-4 border-t border-navy-100 dark:border-navy-700 w-full">
+                  <p className="text-[10px] uppercase tracking-wide text-navy-400 dark:text-navy-500 mb-2">Quick Links</p>
+                  <div className="space-y-2">
+                    {repoUrl && (
+                      <a
+                        href={repoUrl.startsWith('http') ? repoUrl : `https://github.com/${repoUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs text-gold-600 dark:text-gold-400 hover:text-gold-700 dark:hover:text-gold-300 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <span className="truncate">View Repository</span>
+                      </a>
+                    )}
+                    {deployedUrl && (
+                      <a
+                        href={deployedUrl.startsWith('http') ? deployedUrl : `https://${deployedUrl}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs text-gold-600 dark:text-gold-400 hover:text-gold-700 dark:hover:text-gold-300 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        <span className="truncate">Open Live App</span>
+                      </a>
+                    )}
+                  </div>
+                  
+                  {/* Encouragement message */}
+                  <div className="mt-3 p-2 bg-gold-50 dark:bg-gold-900/20 rounded-lg border border-gold-200 dark:border-gold-800/50">
+                    <p className="text-[10px] text-gold-700 dark:text-gold-300 leading-relaxed">
+                      💡 <strong>Pro tip:</strong> While waiting, try the app yourself! Manual testing helps you assess UX and edge cases the AI might miss.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* MIDDLE COLUMN: Live Activity Log */}
-          <div className="lg:col-span-5 p-5 flex flex-col min-h-[400px]">
+          <div className="lg:col-span-5 p-5 flex flex-col min-h-[400px] max-h-[500px]">
             <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3 flex items-center gap-2 flex-shrink-0">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
               Live Activity
+              {detailedProgress && detailedProgress.length > 0 && (
+                <span className="text-navy-500 font-mono">({detailedProgress.length} events)</span>
+              )}
             </h3>
-            <div className="bg-navy-900 dark:bg-navy-950 rounded-xl p-4 flex-1 overflow-y-auto font-mono text-xs">
+            <div className="bg-navy-900 dark:bg-navy-950 rounded-xl p-4 flex-1 overflow-y-auto font-mono text-xs scrollbar-thin scrollbar-thumb-navy-600 scrollbar-track-navy-800">
               {detailedProgress && detailedProgress.length > 0 ? (
                 <div className="space-y-1">
-                  {detailedProgress.slice(0, 20).map((item, index) => (
+                  {/* Show ALL items, newest first for easier scrolling */}
+                  {[...detailedProgress].reverse().map((item, index) => (
                     <div key={`${item.timestamp}-${index}`} className="flex items-start gap-2 py-0.5">
                       <span className={`flex-shrink-0 w-4 text-center ${
                         item.stage === 'error' ? 'text-red-400' :
@@ -186,7 +234,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
                         {item.stage === 'error' ? '✗' : item.stage === 'complete' ? '✓' : '→'}
                       </span>
                       <span className="text-cyan-400 flex-shrink-0">[{item.testName}]</span>
-                      <span className="text-navy-200 flex-1">{item.message}</span>
+                      <span className="text-navy-200 flex-1 break-words">{item.message}</span>
                       {item.percentage !== undefined && (
                         <span className="text-navy-500 flex-shrink-0 tabular-nums">{item.percentage}%</span>
                       )}
@@ -243,7 +291,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
 
             {/* Typical time note */}
             <p className="text-[10px] text-navy-400 dark:text-navy-500 mt-4 pt-3 border-t border-navy-200 dark:border-navy-700">
-              Typically takes 6-8 minutes. Complex applications may take longer.
+              Typically takes 8-12 minutes. Complex applications may take longer.
             </p>
           </div>
         </div>

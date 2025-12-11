@@ -82,7 +82,7 @@ export function PreflightSummary({ repoValid, siteValid, isReady }: PreflightSum
       {/* Estimated time */}
       <div className="mt-4 pt-4 border-t border-navy-700 flex items-center justify-between">
         <span className="text-sm text-navy-300">Estimated total time</span>
-        <span className="font-mono font-semibold text-gold-400">~6-8 minutes</span>
+        <span className="font-mono font-semibold text-gold-400">~8-12 minutes</span>
       </div>
     </div>
   );

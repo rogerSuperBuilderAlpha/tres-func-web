@@ -71,6 +71,8 @@ export interface Evaluation {
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
   pdfUrl?: string;
   manualReviews?: ManualReview[];
+  repoUrl?: string;
+  deployedUrl?: string;
 }
 
 export interface EvaluationSummary {
