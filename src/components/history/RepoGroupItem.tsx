@@ -1,18 +1,8 @@
 'use client';
 
-import type { EvaluationSummary } from '@/types';
 import { getPerformanceTier, formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui';
-
-interface RepoGroup {
-  repoUrl: string;
-  repoName: string;
-  evaluations: EvaluationSummary[];
-  latestScore: number;
-  latestDate: string;
-  bestScore: number;
-  runCount: number;
-}
+import type { RepoGroup } from './types';
 
 interface RepoGroupItemProps {
   group: RepoGroup;
@@ -123,5 +113,6 @@ export function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation 
     </div>
   );
 }
+
 
 

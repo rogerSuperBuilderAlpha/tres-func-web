@@ -9,13 +9,12 @@ interface RubricInfo {
 }
 
 interface ScoreCardProps {
-  rubricKey: string;
   value: number;
   rubricInfo: RubricInfo;
   assessment: string;
 }
 
-export function ScoreCard({ rubricKey, value, rubricInfo, assessment }: ScoreCardProps) {
+export function ScoreCard({ value, rubricInfo, assessment }: ScoreCardProps) {
   const safeValue = Math.max(0, value || 0);
   const percentage = Math.round((safeValue / rubricInfo.max) * 100);
   const grade = getGradeLabel(percentage);
@@ -48,5 +47,6 @@ export function ScoreCard({ rubricKey, value, rubricInfo, assessment }: ScoreCar
     </div>
   );
 }
+
 
 

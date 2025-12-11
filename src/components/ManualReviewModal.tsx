@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { saveManualReview } from '@/lib/api';
-import { Spinner } from '@/components/ui';
+import { Alert, Spinner } from '@/components/ui';
+import { ChecklistSection, createInitialChecklist, type ChecklistItem } from './manual-review/ChecklistSection';
+import { QuestionsSection } from './manual-review/QuestionsSection';
 
 interface ManualReviewModalProps {
   isOpen: boolean;
@@ -12,34 +14,8 @@ interface ManualReviewModalProps {
   onReviewSaved?: () => void;
 }
 
-interface ChecklistItem {
-  id: string;
-  label: string;
-  checked: boolean;
-}
-
-const CHECKLIST_ITEMS: Omit<ChecklistItem, 'checked'>[] = [
-  { id: 'code_review', label: 'Reviewed code structure and organization' },
-  { id: 'readme_check', label: 'Verified README has clear setup instructions' },
-  { id: 'manual_test', label: 'Manually tested the deployed application' },
-  { id: 'edge_cases', label: 'Tested edge cases not covered by automation' },
-  { id: 'security_check', label: 'Checked for obvious security issues' },
-  { id: 'ui_ux', label: 'Assessed UI/UX quality and responsiveness' },
-  { id: 'error_handling', label: 'Verified error handling behavior' },
-  { id: 'score_fair', label: 'Confirmed automated scores seem fair' },
-];
-
-const REVIEW_QUESTIONS = [
-  { id: 'strengths', question: 'What are the notable strengths?', placeholder: 'e.g., Clean code, good error handling...' },
-  { id: 'concerns', question: 'What concerns did you find?', placeholder: 'e.g., Missing validation, poor UX...' },
-  { id: 'recommendation', question: 'Overall assessment?', placeholder: 'e.g., Solid implementation with room for improvement...' },
-  { id: 'notes', question: 'Additional notes?', placeholder: 'e.g., Shows good understanding of core concepts...' },
-];
-
 export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName, onReviewSaved }: ManualReviewModalProps) {
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(
-    CHECKLIST_ITEMS.map(item => ({ ...item, checked: false }))
-  );
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(createInitialChecklist());
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [reviewerName, setReviewerName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -50,8 +26,6 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
   const toggleChecklistItem = (id: string) => {
     setChecklist(prev => prev.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
   };
-
-  const completedCount = checklist.filter(item => item.checked).length;
 
   const handleSubmit = async () => {
     setIsSaving(true);
@@ -66,7 +40,7 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
       });
       onReviewSaved?.();
       // Reset form
-      setChecklist(CHECKLIST_ITEMS.map(item => ({ ...item, checked: false })));
+      setChecklist(createInitialChecklist());
       setAnswers({});
       setReviewerName('');
       onClose();
@@ -134,57 +108,21 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
             </div>
 
             {/* Checklist */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-navy-900">Review Checklist</h3>
-                <span className="text-sm text-navy-500 bg-navy-100 px-2.5 py-1 rounded-full font-medium">
-                  {completedCount}/{checklist.length}
-                </span>
-              </div>
-              <div className="bg-navy-50 rounded-xl p-4 space-y-1">
-                {checklist.map(item => (
-                  <label key={item.id} className="flex items-center gap-3 cursor-pointer hover:bg-navy-100/50 p-2.5 rounded-lg transition">
-                    <input
-                      type="checkbox"
-                      checked={item.checked}
-                      onChange={() => toggleChecklistItem(item.id)}
-                      className="w-4 h-4 text-gold-500 rounded border-navy-300 focus:ring-gold-400 focus:ring-offset-0"
-                    />
-                    <span className={`text-sm ${item.checked ? 'text-navy-400 line-through' : 'text-navy-700'}`}>
-                      {item.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <ChecklistSection checklist={checklist} onToggle={toggleChecklistItem} />
 
             {/* Questions */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-navy-900">Review Questions</h3>
-              {REVIEW_QUESTIONS.map(q => (
-                <div key={q.id}>
-                  <label className="block text-sm font-medium text-navy-700 mb-1.5">{q.question}</label>
-                  <textarea
-                    value={answers[q.id] || ''}
-                    onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                    placeholder={q.placeholder}
-                    rows={3}
-                    className="w-full px-4 py-2.5 bg-white border border-navy-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 text-sm resize-none text-navy-900 placeholder:text-navy-400"
-                  />
-                </div>
-              ))}
-            </div>
+            <QuestionsSection
+              answers={answers}
+              onChange={(id, value) => setAnswers((prev) => ({ ...prev, [id]: value }))}
+            />
           </div>
 
           {/* Footer */}
           <div className="sticky bottom-0 glass border-t border-navy-200 px-6 py-4">
             {error && (
-              <div className="mb-3 p-3 bg-danger-50 border border-danger-200 rounded-xl text-sm text-danger-700 flex items-center gap-2">
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <Alert className="mb-3" variant="danger">
                 {error}
-              </div>
+              </Alert>
             )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

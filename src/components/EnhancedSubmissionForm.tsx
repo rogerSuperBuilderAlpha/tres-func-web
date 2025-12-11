@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { isValidRepoUrl, isValidUrl, getRepoProvider } from '@/lib/utils';
+import { isValidRepoUrl, isValidUrl } from '@/lib/utils';
 import { fetchRepoMetadata, checkSiteAccessibility, RepoMetadata, SiteMetadata } from '@/lib/validators';
-import { Spinner, Collapsible, Badge } from '@/components/ui';
+import { Spinner } from '@/components/ui';
 import { RepoPreview } from './RepoPreview';
 import { SitePreview } from './SitePreview';
 import { PreflightSummary } from './PreflightSummary';
+import { AdvancedOptions } from './submission/AdvancedOptions';
+import { ValidatedUrlInput, type ValidationState } from './submission/ValidatedUrlInput';
 
 interface EnhancedSubmissionFormProps {
   onSubmit: (repoUrl: string, deployedUrl: string, backendRepoUrl?: string, options?: SubmissionOptions) => void;
@@ -19,10 +21,12 @@ export interface SubmissionOptions {
   notes?: string;
 }
 
-interface ValidationState {
-  checking: boolean;
-  valid: boolean;
-  error?: string;
+function useDebouncedEffect(effect: () => void, deps: unknown[], delayMs: number) {
+  useEffect(() => {
+    const timer = setTimeout(effect, delayMs);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, delayMs]);
 }
 
 export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmissionFormProps) {
@@ -101,20 +105,15 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
   }, []);
 
   // Validate on URL changes with debounce
-  useEffect(() => {
-    const timer = setTimeout(() => validateRepo(repoUrl), 500);
-    return () => clearTimeout(timer);
-  }, [repoUrl, validateRepo]);
+  useDebouncedEffect(() => void validateRepo(repoUrl), [repoUrl, validateRepo], 500);
+  useDebouncedEffect(() => void validateRepo(backendRepoUrl, true), [backendRepoUrl, validateRepo], 500);
+  useDebouncedEffect(() => void validateSite(deployedUrl), [deployedUrl, validateSite], 500);
 
-  useEffect(() => {
-    const timer = setTimeout(() => validateRepo(backendRepoUrl, true), 500);
-    return () => clearTimeout(timer);
-  }, [backendRepoUrl, validateRepo]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => validateSite(deployedUrl), 500);
-    return () => clearTimeout(timer);
-  }, [deployedUrl, validateSite]);
+  const canSubmit =
+    repoValidation.valid &&
+    siteValidation.valid &&
+    (backendRepoUrl === '' || backendValidation.valid) &&
+    !isSubmitting;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,19 +124,6 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
       });
     }
   };
-
-  const canSubmit =
-    repoValidation.valid &&
-    siteValidation.valid &&
-    (backendRepoUrl === '' || backendValidation.valid) &&
-    !isSubmitting;
-
-  const focusModes = [
-    { value: 'balanced', label: 'Balanced', icon: '⚖️', desc: 'All tests equally weighted' },
-    { value: 'security', label: 'Security Focus', icon: '🔒', desc: 'Emphasis on security tests' },
-    { value: 'ux', label: 'UX Focus', icon: '🎨', desc: 'Emphasis on UX & accessibility' },
-    { value: 'performance', label: 'Performance', icon: '⚡', desc: 'Speed & resilience focus' },
-  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,7 +146,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
 
         <div className="space-y-4">
           {/* Frontend Repository */}
-          <ValidatedInput
+          <ValidatedUrlInput
             id="repoUrl"
             label="Frontend Repository"
             required
@@ -171,7 +157,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
           />
 
           {/* Backend Repository */}
-          <ValidatedInput
+          <ValidatedUrlInput
             id="backendRepoUrl"
             label="Backend Repository"
             value={backendRepoUrl}
@@ -182,7 +168,7 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
           />
 
           {/* Deployed URL */}
-          <ValidatedInput
+          <ValidatedUrlInput
             id="deployedUrl"
             label="Deployed Application"
             required
@@ -194,61 +180,12 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
         </div>
 
         {/* Advanced Options */}
-        <div className="mt-5 pt-5 border-t border-navy-100 dark:border-navy-700">
-          <Collapsible
-            trigger={
-              <div className="flex items-center gap-2 text-sm font-medium text-navy-700 dark:text-navy-300">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Advanced Options
-              </div>
-            }
-          >
-            <div className="mt-4 space-y-4">
-              {/* Focus Mode */}
-              <div>
-                <label className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-2">Evaluation Focus</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {focusModes.map((mode) => (
-                    <button
-                      key={mode.value}
-                      type="button"
-                      onClick={() => setFocusMode(mode.value as SubmissionOptions['focusMode'])}
-                      className={`flex items-center gap-2 p-3 rounded-xl border-2 transition ${
-                        focusMode === mode.value
-                          ? 'border-gold-400 bg-gold-50 dark:bg-gold-900/30'
-                          : 'border-navy-200 dark:border-navy-600 hover:border-navy-300 dark:hover:border-navy-500 bg-white dark:bg-navy-800'
-                      }`}
-                    >
-                      <span className="text-lg">{mode.icon}</span>
-                      <div className="text-left">
-                        <p className="text-sm font-medium text-navy-900 dark:text-navy-100">{mode.label}</p>
-                        <p className="text-xs text-navy-500 dark:text-navy-400">{mode.desc}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-1.5">
-                  Notes <span className="text-navy-400 dark:text-navy-500 font-normal">(optional)</span>
-                </label>
-                <textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any notes about this submission..."
-                  rows={2}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-navy-800 border border-navy-200 dark:border-navy-600 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-gold-400 transition text-sm text-navy-900 dark:text-navy-100 placeholder:text-navy-400 dark:placeholder:text-navy-500 resize-none"
-                />
-              </div>
-            </div>
-          </Collapsible>
-        </div>
+        <AdvancedOptions
+          focusMode={focusMode}
+          onFocusModeChange={setFocusMode}
+          notes={notes}
+          onNotesChange={setNotes}
+        />
 
         {/* Submit Button */}
         <button
@@ -294,76 +231,3 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
     </form>
   );
 }
-
-// Validated Input Component
-function ValidatedInput({
-  id,
-  label,
-  required,
-  value,
-  onChange,
-  placeholder,
-  validation,
-  optional,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  validation: ValidationState;
-  optional?: boolean;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-1.5">
-        {label}{' '}
-        {required ? (
-          <span className="text-danger-500">*</span>
-        ) : (
-          <span className="text-navy-400 dark:text-navy-500 font-normal">(optional)</span>
-        )}
-      </label>
-      <div className="relative">
-        <input
-          type="url"
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={`w-full px-4 py-2.5 pr-10 bg-white dark:bg-navy-800 border rounded-xl focus:ring-2 transition text-sm text-navy-900 dark:text-navy-100 placeholder:text-navy-400 dark:placeholder:text-navy-500 ${
-            validation.error && value
-              ? 'border-danger-300 dark:border-danger-500/50 focus:ring-danger-400 focus:border-danger-400'
-              : validation.valid
-              ? 'border-success-300 dark:border-success-500/50 focus:ring-success-400 focus:border-success-400'
-              : 'border-navy-200 dark:border-navy-600 focus:ring-gold-400 focus:border-gold-400'
-          }`}
-          required={required}
-        />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          {validation.checking ? (
-            <Spinner size="sm" className="text-navy-400" />
-          ) : validation.valid && value ? (
-            <svg className="w-5 h-5 text-success-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          ) : validation.error && value ? (
-            <svg className="w-5 h-5 text-danger-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          ) : null}
-        </div>
-      </div>
-      {validation.error && value && (
-        <p className="mt-1.5 text-xs text-danger-600 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          {validation.error}
-        </p>
-      )}
-    </div>
-  );
-}
-

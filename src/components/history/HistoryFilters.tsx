@@ -1,8 +1,6 @@
 'use client';
 
-type SortField = 'date' | 'score' | 'name';
-type SortOrder = 'asc' | 'desc';
-type ScoreFilter = 'all' | 'excellent' | 'proficient' | 'needs-work';
+import type { SortField, SortOrder, ScoreFilter } from './types';
 
 interface HistoryFiltersProps {
   searchQuery: string;
@@ -78,5 +76,6 @@ export function HistoryFilters({
     </div>
   );
 }
+
 
 

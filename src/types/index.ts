@@ -47,6 +47,15 @@ export interface AiExecutiveSummary {
   scoreBreakdown?: string;
 }
 
+export interface ScoreReasoning {
+  coreFunctionality: string;
+  errorHandling: string;
+  uxAccessibility: string;
+  codeQuality: string;
+  security: string;
+  deploymentCompliance: string;
+}
+
 // Score types
 export interface RubricScores {
   coreFunctionality: number;    // 20 points - includes image processing
@@ -136,6 +145,7 @@ export interface EvaluationReportData {
     recommendations: string[];
   };
   aiExecutiveSummary?: AiExecutiveSummary;
+  scoreReasoning?: ScoreReasoning;
   suites?: EvaluationSuites;
   qualitativeAssessments?: QualitativeAssessments;
   llmCosts?: LlmCostSummary;

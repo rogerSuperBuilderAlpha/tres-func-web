@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
-import { SCORE_THRESHOLDS } from '@/lib/constants';
+import { StatCard } from './stats/StatCard';
+import { calculateStats } from './stats/utils';
 
 interface DashboardStatsProps {
   evaluations: EvaluationSummary[];
@@ -10,7 +11,7 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ evaluations, costAggregation }: DashboardStatsProps) {
-  const stats = calculateStats(evaluations);
+  const stats = useMemo(() => calculateStats(evaluations), [evaluations]);
 
   return (
     <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 p-5">
@@ -143,67 +144,3 @@ export function DashboardStats({ evaluations, costAggregation }: DashboardStatsP
     </div>
   );
 }
-
-function StatCard({
-  label,
-  value,
-  subtext,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  subtext?: string;
-  icon: React.ReactNode;
-  color: 'navy' | 'gold' | 'success' | 'danger';
-}) {
-  const colorClasses = {
-    navy: 'bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300',
-    gold: 'bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400',
-    success: 'bg-success-50 dark:bg-success-900/30 text-success-600 dark:text-success-400',
-    danger: 'bg-danger-50 dark:bg-danger-900/30 text-danger-600 dark:text-danger-400',
-  };
-
-  return (
-    <div className="bg-navy-50/50 dark:bg-navy-800/50 rounded-xl p-3">
-      <div className={`w-7 h-7 rounded-lg ${colorClasses[color]} flex items-center justify-center mb-2`}>
-        {icon}
-      </div>
-      <p className="text-xs text-navy-500 dark:text-navy-400">{label}</p>
-      <div className="flex items-baseline gap-1">
-        <p className="text-lg font-bold text-navy-900 dark:text-white">{value}</p>
-        {subtext && <span className="text-xs text-navy-400 dark:text-navy-500">{subtext}</span>}
-      </div>
-    </div>
-  );
-}
-
-function calculateStats(evaluations: EvaluationSummary[]) {
-  const total = evaluations.length;
-  let totalScore = 0;
-  let excellent = 0;
-  let proficient = 0;
-  let needsWork = 0;
-  let withCritical = 0;
-
-  for (const evaluation of evaluations) {
-    const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
-    totalScore += score;
-
-    if (score >= SCORE_THRESHOLDS.EXCELLENT_MIN) excellent++;
-    else if (score >= SCORE_THRESHOLDS.PROFICIENT_MIN) proficient++;
-    else needsWork++;
-
-    if (evaluation.criticalFailuresCount > 0) withCritical++;
-  }
-
-  return {
-    total,
-    avgScore: total > 0 ? Math.round(totalScore / total) : 0,
-    excellent,
-    proficient,
-    needsWork,
-    withCritical,
-  };
-}
-

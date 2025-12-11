@@ -19,3 +19,4 @@ export const TIME_THRESHOLDS = {
   CRITICAL: 720,  // 12 minutes - show critical status
   STUCK: 240,     // 4 minutes on same test = stuck
 } as const;
+
