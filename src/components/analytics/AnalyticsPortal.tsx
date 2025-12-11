@@ -1,7 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
+import { API_BASE } from '@/lib/api';
+
+type DateRange = 'last7' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
 
 interface AnalyticsPortalProps {
   isOpen: boolean;
@@ -29,7 +32,94 @@ interface IssueAnalysis {
   percentage: number;
 }
 
-export function AnalyticsPortal({ isOpen, onClose, evaluations, costAggregation }: AnalyticsPortalProps) {
+export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluations, costAggregation: initialCostAggregation }: AnalyticsPortalProps) {
+  const [dateRange, setDateRange] = useState<DateRange>('last30');
+  const [customFromDate, setCustomFromDate] = useState('');
+  const [customToDate, setCustomToDate] = useState('');
+  const [evaluations, setEvaluations] = useState<EvaluationSummary[]>(initialEvaluations);
+  const [costAggregation, setCostAggregation] = useState<CostAggregation | undefined>(initialCostAggregation);
+  const [loading, setLoading] = useState(false);
+  const [dataInfo, setDataInfo] = useState<string>('');
+
+  // Calculate date range bounds
+  const getDateBounds = useCallback((range: DateRange): { fromDate?: string; toDate?: string; all?: boolean } => {
+    const now = new Date();
+    const toDate = now.toISOString();
+    
+    switch (range) {
+      case 'last7': {
+        const from = new Date(now);
+        from.setDate(from.getDate() - 7);
+        return { fromDate: from.toISOString(), toDate };
+      }
+      case 'last30': {
+        const from = new Date(now);
+        from.setDate(from.getDate() - 30);
+        return { fromDate: from.toISOString(), toDate };
+      }
+      case 'last90': {
+        const from = new Date(now);
+        from.setDate(from.getDate() - 90);
+        return { fromDate: from.toISOString(), toDate };
+      }
+      case 'thisYear': {
+        const from = new Date(now.getFullYear(), 0, 1);
+        return { fromDate: from.toISOString(), toDate };
+      }
+      case 'allTime':
+        return { all: true };
+      case 'custom':
+        return {
+          fromDate: customFromDate ? new Date(customFromDate).toISOString() : undefined,
+          toDate: customToDate ? new Date(customToDate + 'T23:59:59').toISOString() : undefined,
+        };
+      default:
+        return {};
+    }
+  }, [customFromDate, customToDate]);
+
+  // Fetch data when date range changes
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const bounds = getDateBounds(dateRange);
+      const params = new URLSearchParams();
+      
+      if (bounds.all) {
+        params.set('all', 'true');
+      } else {
+        params.set('limit', '500');
+      }
+      if (bounds.fromDate) params.set('fromDate', bounds.fromDate);
+      if (bounds.toDate) params.set('toDate', bounds.toDate);
+
+      const response = await fetch(`${API_BASE}/evaluations?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      
+      const data = await response.json();
+      setEvaluations(data.evaluations || []);
+      setCostAggregation(data.costAggregation);
+      setDataInfo(`${data.evaluations?.length || 0} evaluations loaded`);
+    } catch (err) {
+      console.error('Failed to fetch analytics data:', err);
+      setDataInfo('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange, getDateBounds]);
+
+  // Fetch on open and when date range changes
+  useEffect(() => {
+    if (isOpen && dateRange !== 'last30') {
+      fetchData();
+    } else if (isOpen) {
+      // Use initial data for last30 (default)
+      setEvaluations(initialEvaluations);
+      setCostAggregation(initialCostAggregation);
+      setDataInfo(`${initialEvaluations.length} evaluations loaded`);
+    }
+  }, [isOpen, dateRange, fetchData, initialEvaluations, initialCostAggregation]);
+
   // Calculate comprehensive analytics
   const analytics = useMemo(() => {
     if (evaluations.length === 0) {
@@ -135,26 +225,93 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations, costAggregation 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 backdrop-blur-sm">
       <div className="relative w-full max-w-6xl max-h-[90vh] m-4 bg-white dark:bg-navy-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-navy-100 dark:border-navy-700 bg-gradient-to-r from-navy-50 to-white dark:from-navy-800 dark:to-navy-900">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <div className="flex-shrink-0 border-b border-navy-100 dark:border-navy-700 bg-gradient-to-r from-navy-50 to-white dark:from-navy-800 dark:to-navy-900">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-navy-900 dark:text-white">Analytics Dashboard</h2>
+                <p className="text-sm text-navy-500 dark:text-navy-400">
+                  {loading ? 'Loading...' : dataInfo || 'Comprehensive evaluation insights'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 hover:bg-navy-100 dark:hover:bg-navy-800 rounded-lg transition"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-navy-900 dark:text-white">Analytics Dashboard</h2>
-              <p className="text-sm text-navy-500 dark:text-navy-400">Comprehensive evaluation insights</p>
-            </div>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 hover:bg-navy-100 dark:hover:bg-navy-800 rounded-lg transition"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          {/* Date Range Selector */}
+          <div className="px-6 pb-4 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-navy-600 dark:text-navy-400">Time Range:</span>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { value: 'last7', label: '7 Days' },
+                { value: 'last30', label: '30 Days' },
+                { value: 'last90', label: '90 Days' },
+                { value: 'thisYear', label: 'This Year' },
+                { value: 'allTime', label: 'All Time' },
+                { value: 'custom', label: 'Custom' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setDateRange(option.value as DateRange)}
+                  disabled={loading}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                    dateRange === option.value
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300 hover:bg-navy-200 dark:hover:bg-navy-600'
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Date Inputs */}
+            {dateRange === 'custom' && (
+              <div className="flex items-center gap-2 ml-2">
+                <input
+                  type="date"
+                  value={customFromDate}
+                  onChange={(e) => setCustomFromDate(e.target.value)}
+                  className="px-2 py-1 text-xs rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
+                />
+                <span className="text-navy-400">to</span>
+                <input
+                  type="date"
+                  value={customToDate}
+                  onChange={(e) => setCustomToDate(e.target.value)}
+                  className="px-2 py-1 text-xs rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
+                />
+                <button
+                  onClick={fetchData}
+                  disabled={loading || (!customFromDate && !customToDate)}
+                  className="px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
+
+            {loading && (
+              <div className="ml-2">
+                <svg className="animate-spin h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
