@@ -91,6 +91,12 @@ export interface EvaluationSummary {
     concerns: string[];
   };
   aiAssessment?: string;
+  llmCosts?: {
+    totalCostUsd: number;
+    totalTokens: number;
+    inputTokens?: number;
+    outputTokens?: number;
+  };
 }
 
 // Critical issue type (can be string for legacy or object for AI-generated)
@@ -132,6 +138,7 @@ export interface EvaluationReportData {
   aiExecutiveSummary?: AiExecutiveSummary;
   suites?: EvaluationSuites;
   qualitativeAssessments?: QualitativeAssessments;
+  llmCosts?: LlmCostSummary;
 }
 
 // Test suite types
@@ -343,4 +350,30 @@ export interface QualitativeAssessments {
     compliantItems: string[];
     nonCompliantItems: string[];
   };
+}
+
+// LLM cost tracking
+export interface LlmCostBreakdown {
+  operation: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+export interface LlmCostSummary {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalTokens: number;
+  totalCostUsd: number;
+  breakdown?: LlmCostBreakdown[];
+}
+
+export interface CostAggregation {
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+  last3Months: number;
+  allTime: number;
+  evaluationCount: number;
 }

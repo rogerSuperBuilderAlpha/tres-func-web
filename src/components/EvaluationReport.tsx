@@ -211,6 +211,19 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
                   {report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'}
                 </p>
               </div>
+              {report.llmCosts && report.llmCosts.totalCostUsd > 0 && (
+                <div className="pt-3 border-t border-navy-100 mt-3">
+                  <p className="text-xs text-navy-400 mb-1">LLM Evaluation Cost</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-navy-700 font-medium">
+                      ${report.llmCosts.totalCostUsd.toFixed(4)}
+                    </span>
+                    <span className="text-xs text-navy-400">
+                      ({(report.llmCosts.totalTokens || 0).toLocaleString()} tokens)
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { EvaluationSummary } from '@/types';
+import type { EvaluationSummary, CostAggregation } from '@/types';
 
 interface DashboardStatsProps {
   evaluations: EvaluationSummary[];
+  costAggregation?: CostAggregation;
 }
 
-export function DashboardStats({ evaluations }: DashboardStatsProps) {
+export function DashboardStats({ evaluations, costAggregation }: DashboardStatsProps) {
   const stats = calculateStats(evaluations);
 
   return (
@@ -66,6 +67,38 @@ export function DashboardStats({ evaluations }: DashboardStatsProps) {
           color="danger"
         />
       </div>
+
+      {/* LLM Costs */}
+      {costAggregation && costAggregation.allTime > 0 && (
+        <div className="mt-4 pt-4 border-t border-navy-100 dark:border-navy-700">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p className="text-xs font-medium text-navy-500 dark:text-navy-400 uppercase tracking-wide">LLM Costs</p>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-navy-50/50 dark:bg-navy-800/50 rounded-lg p-2 text-center">
+              <p className="text-xs text-navy-400 dark:text-navy-500">Today</p>
+              <p className="text-sm font-bold text-navy-900 dark:text-white">${costAggregation.today.toFixed(2)}</p>
+            </div>
+            <div className="bg-navy-50/50 dark:bg-navy-800/50 rounded-lg p-2 text-center">
+              <p className="text-xs text-navy-400 dark:text-navy-500">This Week</p>
+              <p className="text-sm font-bold text-navy-900 dark:text-white">${costAggregation.thisWeek.toFixed(2)}</p>
+            </div>
+            <div className="bg-navy-50/50 dark:bg-navy-800/50 rounded-lg p-2 text-center">
+              <p className="text-xs text-navy-400 dark:text-navy-500">This Month</p>
+              <p className="text-sm font-bold text-navy-900 dark:text-white">${costAggregation.thisMonth.toFixed(2)}</p>
+            </div>
+            <div className="bg-navy-50/50 dark:bg-navy-800/50 rounded-lg p-2 text-center">
+              <p className="text-xs text-navy-400 dark:text-navy-500">All Time</p>
+              <p className="text-sm font-bold text-purple-600 dark:text-purple-400">${costAggregation.allTime.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Score Distribution Bar */}
       <div className="mt-4 pt-4 border-t border-navy-100 dark:border-navy-700">

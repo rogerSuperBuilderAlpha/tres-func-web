@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { EvaluationSummary } from '@/types';
+import type { EvaluationSummary, CostAggregation } from '@/types';
 import { extractRepoName } from '@/lib/utils';
 import { DashboardStats } from './DashboardStats';
 import { HistoryFilters, EvaluationListItem, RepoGroupItem } from './history';
@@ -29,6 +29,7 @@ interface RepoGroup {
 
 export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showStatsProp = true }: EnhancedHistoryProps) {
   const [evaluations, setEvaluations] = useState<EvaluationSummary[]>([]);
+  const [costAggregation, setCostAggregation] = useState<CostAggregation | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -53,6 +54,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
       if (!response.ok) throw new Error('Failed to fetch evaluations');
       const data = await response.json();
       setEvaluations(data.evaluations || []);
+      setCostAggregation(data.costAggregation);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load history');
     } finally {
@@ -202,7 +204,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
 
   return (
     <div className="space-y-4">
-      {showStats && evaluations.length > 0 && <DashboardStats evaluations={evaluations} />}
+      {showStats && evaluations.length > 0 && <DashboardStats evaluations={evaluations} costAggregation={costAggregation} />}
 
       <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 overflow-hidden">
         {/* Header */}
