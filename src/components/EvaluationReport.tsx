@@ -332,6 +332,105 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
               })}
           </div>
 
+          {/* Qualitative Assessments (Non-Scoring) */}
+          {report.qualitativeAssessments && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-navy-900 mb-4">Additional Assessments</h3>
+              <p className="text-sm text-navy-500 mb-4">These assessments provide additional context but do not factor into the overall score.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* AI-First Mindset */}
+                {report.qualitativeAssessments.aiFirstMindset && (
+                  <div className="bg-white rounded-xl shadow-sm p-5 border border-navy-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-navy-800 flex items-center gap-2">
+                        <span>🤖</span> AI-First Mindset
+                      </h4>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        report.qualitativeAssessments.aiFirstMindset.score === 'strong' ? 'bg-success-100 text-success-700' :
+                        report.qualitativeAssessments.aiFirstMindset.score === 'moderate' ? 'bg-gold-100 text-gold-700' :
+                        report.qualitativeAssessments.aiFirstMindset.score === 'weak' ? 'bg-warning-100 text-warning-700' :
+                        'bg-danger-100 text-danger-700'
+                      }`}>
+                        {report.qualitativeAssessments.aiFirstMindset.score.charAt(0).toUpperCase() + report.qualitativeAssessments.aiFirstMindset.score.slice(1)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-navy-600 mb-3">{report.qualitativeAssessments.aiFirstMindset.assessment}</p>
+                    {report.qualitativeAssessments.aiFirstMindset.positiveIndicators.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs font-medium text-navy-500 mb-1">Positive Indicators:</p>
+                        <ul className="space-y-1">
+                          {report.qualitativeAssessments.aiFirstMindset.positiveIndicators.map((item, i) => (
+                            <li key={i} className="text-xs text-success-600 flex items-start gap-1">
+                              <span>✓</span> {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {report.qualitativeAssessments.aiFirstMindset.negativeIndicators.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-navy-500 mb-1">Areas of Concern:</p>
+                        <ul className="space-y-1">
+                          {report.qualitativeAssessments.aiFirstMindset.negativeIndicators.map((item, i) => (
+                            <li key={i} className="text-xs text-warning-600 flex items-start gap-1">
+                              <span>!</span> {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Instructions Compliance */}
+                {report.qualitativeAssessments.instructionsCompliance && (
+                  <div className="bg-white rounded-xl shadow-sm p-5 border border-navy-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-navy-800 flex items-center gap-2">
+                        <span>📋</span> Instructions Compliance
+                      </h4>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        report.qualitativeAssessments.instructionsCompliance.score === 'full' ? 'bg-success-100 text-success-700' :
+                        report.qualitativeAssessments.instructionsCompliance.score === 'partial' ? 'bg-gold-100 text-gold-700' :
+                        report.qualitativeAssessments.instructionsCompliance.score === 'minimal' ? 'bg-warning-100 text-warning-700' :
+                        'bg-danger-100 text-danger-700'
+                      }`}>
+                        {report.qualitativeAssessments.instructionsCompliance.score === 'non_compliant' ? 'Non-Compliant' :
+                         report.qualitativeAssessments.instructionsCompliance.score.charAt(0).toUpperCase() + report.qualitativeAssessments.instructionsCompliance.score.slice(1)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-navy-600 mb-3">{report.qualitativeAssessments.instructionsCompliance.assessment}</p>
+                    {report.qualitativeAssessments.instructionsCompliance.compliantItems.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs font-medium text-navy-500 mb-1">Requirements Met:</p>
+                        <ul className="space-y-1">
+                          {report.qualitativeAssessments.instructionsCompliance.compliantItems.map((item, i) => (
+                            <li key={i} className="text-xs text-success-600 flex items-start gap-1">
+                              <span>✓</span> {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {report.qualitativeAssessments.instructionsCompliance.nonCompliantItems.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-navy-500 mb-1">Requirements Not Met:</p>
+                        <ul className="space-y-1">
+                          {report.qualitativeAssessments.instructionsCompliance.nonCompliantItems.map((item, i) => (
+                            <li key={i} className="text-xs text-danger-600 flex items-start gap-1">
+                              <span>✗</span> {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Recommendations */}
           {(report.summary?.recommendations?.length ?? 0) > 0 && (
             <div className="mt-8">

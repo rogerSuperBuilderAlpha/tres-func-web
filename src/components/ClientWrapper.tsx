@@ -10,3 +10,4 @@ export function ClientWrapper({ children }: ClientWrapperProps) {
   return <PasswordGate>{children}</PasswordGate>;
 }
 
+

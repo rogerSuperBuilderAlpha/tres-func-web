@@ -129,6 +129,7 @@ export interface EvaluationReportData {
   };
   aiExecutiveSummary?: AiExecutiveSummary;
   suites?: EvaluationSuites;
+  qualitativeAssessments?: QualitativeAssessments;
 }
 
 // Test suite types
@@ -324,4 +325,20 @@ export interface ManualReview {
   answers: Record<string, string>;
   reviewerName?: string;
   reviewedAt: string;
+}
+
+// Qualitative assessments (non-scoring)
+export interface QualitativeAssessments {
+  aiFirstMindset?: {
+    score: 'strong' | 'moderate' | 'weak' | 'none';
+    assessment: string;
+    positiveIndicators: string[];
+    negativeIndicators: string[];
+  };
+  instructionsCompliance?: {
+    score: 'full' | 'partial' | 'minimal' | 'non_compliant';
+    assessment: string;
+    compliantItems: string[];
+    nonCompliantItems: string[];
+  };
 }
