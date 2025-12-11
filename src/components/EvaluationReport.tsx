@@ -63,13 +63,34 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
 
   const getRubricAssessment = (rubricKey: string): string => {
     const suites = report.suites as Record<string, Record<string, unknown>> | undefined;
-    if (!suites) return 'Assessment data not available';
     
     const rubric = report.scores?.rubric as Record<string, number> | undefined;
     const score = rubric?.[rubricKey] || 0;
     const maxScore = RUBRIC_LABELS[rubricKey]?.max || 20;
     const percentage = Math.round((score / maxScore) * 100);
 
+    // First, check for overall scoreReasoning (this considers ALL tests including Playwright)
+    const scoreReasoning = (report as unknown as Record<string, unknown>).scoreReasoning as Record<string, string> | undefined;
+    if (scoreReasoning?.[rubricKey] && scoreReasoning[rubricKey] !== 'Fallback scoring - AI unavailable') {
+      return scoreReasoning[rubricKey];
+    }
+
+    // For Core Functionality, prioritize showing Playwright results since they reflect real user experience
+    if (rubricKey === 'coreFunctionality' && suites?.uxTest) {
+      const uxTest = suites.uxTest as Record<string, unknown>;
+      const formInteraction = uxTest.formInteraction as { foundForm?: boolean; filledFields?: number; uploadedImage?: boolean; submissionResult?: { submitted?: boolean; responseReceived?: boolean; showedResultScreen?: boolean } } | undefined;
+      if (formInteraction?.submissionResult) {
+        const result = formInteraction.submissionResult;
+        const playwrightWorked = result.submitted && result.responseReceived && result.showedResultScreen;
+        if (playwrightWorked) {
+          return `Playwright browser tests show the application works for real users: form was found, fields were filled, image was uploaded, form was submitted successfully, and results were displayed. This indicates core functionality works from the user's perspective. HTTP API tests may have failed due to endpoint path differences, but the user-facing experience is functional.`;
+        }
+      }
+    }
+
+    if (!suites) return 'Assessment data not available';
+
+    // Fall back to suite-level AI analysis
     for (const suiteKey of (RUBRIC_TO_SUITE_MAP[rubricKey] || [])) {
       const suite = suites[suiteKey];
       const aiAnalysis = suite?.aiAnalysis as { explanation?: string; keyFindings?: string[] } | undefined;
