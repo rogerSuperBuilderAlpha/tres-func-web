@@ -69,9 +69,10 @@ export default function Home() {
   };
 
   const pollStatus = useCallback(async (evaluationId: string) => {
-    // Extended polling - keep polling for up to 15 minutes (180 attempts at 5s intervals)
-    // The UI will show appropriate warnings after 3-5 minutes
-    const maxAttempts = 180;
+    // Extended polling - keep polling for up to 20 minutes (240 attempts at 5s intervals)
+    // Claude Sonnet 4.5 takes longer to generate detailed responses
+    // The UI will show appropriate warnings after 6-9 minutes
+    const maxAttempts = 240;
     let attempts = 0;
     let consecutiveErrors = 0;
     let lastProgressChange = Date.now();
@@ -119,9 +120,10 @@ export default function Home() {
           return;
         }
 
-        // Check if evaluation seems truly stuck (no progress for 5 minutes)
+        // Check if evaluation seems truly stuck (no progress for 8 minutes)
+        // Claude Sonnet 4.5 AI calls can take 2-3 minutes each
         const stuckTime = Date.now() - lastProgressChange;
-        if (stuckTime > 300000) { // 5 minutes with no progress change
+        if (stuckTime > 480000) { // 8 minutes with no progress change
           // Show a soft error but don't stop polling entirely
           setError('Evaluation appears to be stuck. You can wait or try again later.');
         }
@@ -129,7 +131,7 @@ export default function Home() {
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
         } else {
-          // After 15 minutes, give up but provide helpful message
+          // After 20 minutes, give up but provide helpful message
           const runningTests = data.progress 
             ? Object.entries(data.progress)
                 .filter(([_, status]) => status === 'running')
@@ -138,7 +140,7 @@ export default function Home() {
           
           const stuckMsg = runningTests.length > 0 
             ? `Tests stuck on: ${runningTests.join(', ')}. This usually indicates an issue with the candidate's application.`
-            : 'Evaluation timed out after 15 minutes.';
+            : 'Evaluation timed out after 20 minutes.';
           
           setError(stuckMsg);
           // Don't mark as FAILED yet - let user see the partial progress

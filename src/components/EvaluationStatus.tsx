@@ -13,10 +13,10 @@ interface EvaluationStatusProps {
   detailedProgress?: DetailedProgress[];
 }
 
-// Time thresholds
-const WARNING_THRESHOLD = 180; // 3 minutes - show warning
-const CRITICAL_THRESHOLD = 300; // 5 minutes - show critical status
-const STUCK_THRESHOLD = 120; // 2 minutes on same test = stuck
+// Time thresholds (adjusted for Claude Sonnet 4.5 which produces more detailed responses)
+const WARNING_THRESHOLD = 360; // 6 minutes - show warning
+const CRITICAL_THRESHOLD = 540; // 9 minutes - show critical status
+const STUCK_THRESHOLD = 180; // 3 minutes on same test = stuck (AI calls take longer)
 
 export function EvaluationStatus({ evaluationId, progress, startTime, detailedProgress }: EvaluationStatusProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -243,7 +243,7 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
 
             {/* Typical time note */}
             <p className="text-[10px] text-navy-400 dark:text-navy-500 mt-4 pt-3 border-t border-navy-200 dark:border-navy-700">
-              Typically takes 2-4 minutes. Complex applications may take longer.
+              Typically takes 6-8 minutes. Complex applications may take longer.
             </p>
           </div>
         </div>

@@ -9,16 +9,16 @@ interface PreflightSummaryProps {
 }
 
 const testSuites = [
-  { name: 'Pre-flight Security', icon: '🔒', time: '~10s' },
-  { name: 'Repository Analysis', icon: '📁', time: '~20s' },
-  { name: 'Security Testing', icon: '🛡️', time: '~30s' },
-  { name: 'Functional Testing', icon: '⚙️', time: '~45s' },
-  { name: 'Image Edge Cases', icon: '🖼️', time: '~30s' },
-  { name: 'Form Validation', icon: '📝', time: '~25s' },
-  { name: 'Resilience Testing', icon: '💪', time: '~40s' },
-  { name: 'UX & Accessibility', icon: '♿', time: '~35s' },
-  { name: 'AI Code Review', icon: '🤖', time: '~20s' },
-  { name: 'Deployment Check', icon: '🚀', time: '~15s' },
+  { name: 'Pre-flight Security', icon: '🔒', time: '~15s' },
+  { name: 'Repository Analysis', icon: '📁', time: '~30s' },
+  { name: 'Security Testing', icon: '🛡️', time: '~45s' },
+  { name: 'Functional Testing', icon: '⚙️', time: '~60s' },
+  { name: 'Image Edge Cases', icon: '🖼️', time: '~45s' },
+  { name: 'Form Validation', icon: '📝', time: '~30s' },
+  { name: 'Resilience Testing', icon: '💪', time: '~45s' },
+  { name: 'UX & Accessibility', icon: '♿', time: '~50s' },
+  { name: 'AI Code Review', icon: '🤖', time: '~60s' },
+  { name: 'Report Generation', icon: '📊', time: '~90s' },
 ];
 
 export function PreflightSummary({ repoValid, siteValid, isReady }: PreflightSummaryProps) {
@@ -82,7 +82,7 @@ export function PreflightSummary({ repoValid, siteValid, isReady }: PreflightSum
       {/* Estimated time */}
       <div className="mt-4 pt-4 border-t border-navy-700 flex items-center justify-between">
         <span className="text-sm text-navy-300">Estimated total time</span>
-        <span className="font-mono font-semibold text-gold-400">~4-5 minutes</span>
+        <span className="font-mono font-semibold text-gold-400">~6-8 minutes</span>
       </div>
     </div>
   );
