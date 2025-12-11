@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import { DashboardStats } from './DashboardStats';
+import { AnalyticsPortal } from './analytics';
 import {
   EvaluationListItem,
   HistoryEmptyState,
@@ -40,6 +41,7 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
   const [showStats, setShowStats] = useState(showStatsProp);
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [expandedRepos, setExpandedRepos] = useState<Set<string>>(new Set());
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const fetchEvaluations = useCallback(async () => {
     setLoading(true);
@@ -98,7 +100,21 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
 
   return (
     <div className="space-y-4">
-      {showStats && evaluations.length > 0 && <DashboardStats evaluations={evaluations} costAggregation={costAggregation} />}
+      {showStats && evaluations.length > 0 && (
+        <DashboardStats 
+          evaluations={evaluations} 
+          costAggregation={costAggregation}
+          onOpenAnalytics={() => setShowAnalytics(true)}
+        />
+      )}
+      
+      {/* Analytics Portal */}
+      <AnalyticsPortal
+        isOpen={showAnalytics}
+        onClose={() => setShowAnalytics(false)}
+        evaluations={evaluations}
+        costAggregation={costAggregation}
+      />
 
       <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 overflow-hidden">
         <HistoryHeader
