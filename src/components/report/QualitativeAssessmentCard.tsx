@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 /**
  * Reusable card component for qualitative (non-scoring) assessments
  * Used for AI-First Mindset and Instructions Compliance assessments
@@ -51,7 +53,7 @@ function formatScore(score: string): string {
     .join(' ');
 }
 
-export function QualitativeAssessmentCard({
+export const QualitativeAssessmentCard = memo(function QualitativeAssessmentCard({
   icon,
   title,
   score,
@@ -102,6 +104,4 @@ export function QualitativeAssessmentCard({
       )}
     </div>
   );
-}
-
-
+});
