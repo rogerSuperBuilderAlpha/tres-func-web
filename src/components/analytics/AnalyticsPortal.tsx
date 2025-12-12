@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import { API_BASE } from '@/lib/api';
 
@@ -509,24 +509,24 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
 }
 
 // Helper Components
-function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
-  const colorClasses: Record<string, string> = {
-    navy: 'bg-navy-100 dark:bg-navy-800 text-navy-600 dark:text-navy-300',
-    gold: 'bg-gold-100 dark:bg-gold-900/30 text-gold-600 dark:text-gold-400',
-    success: 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-400',
-    danger: 'bg-danger-100 dark:bg-danger-900/30 text-danger-600 dark:text-danger-400',
-    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-  };
+const COLOR_CLASSES: Record<string, string> = {
+  navy: 'bg-navy-100 dark:bg-navy-800 text-navy-600 dark:text-navy-300',
+  gold: 'bg-gold-100 dark:bg-gold-900/30 text-gold-600 dark:text-gold-400',
+  success: 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-400',
+  danger: 'bg-danger-100 dark:bg-danger-900/30 text-danger-600 dark:text-danger-400',
+  purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+};
 
+const MetricCard = memo(function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className={`rounded-xl p-4 ${colorClasses[color] || colorClasses.navy}`}>
+    <div className={`rounded-xl p-4 ${COLOR_CLASSES[color] || COLOR_CLASSES.navy}`}>
       <p className="text-xs font-medium opacity-70 mb-1">{label}</p>
       <p className="text-xl font-bold">{value}</p>
     </div>
   );
-}
+});
 
-function DistributionBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+const DistributionBar = memo(function DistributionBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
   const percentage = total > 0 ? (count / total) * 100 : 0;
   
   return (
@@ -540,9 +540,9 @@ function DistributionBar({ label, count, total, color }: { label: string; count:
       </div>
     </div>
   );
-}
+});
 
-function CostRow({ label, value, highlight, bold }: { label: string; value: number; highlight?: boolean; bold?: boolean }) {
+const CostRow = memo(function CostRow({ label, value, highlight, bold }: { label: string; value: number; highlight?: boolean; bold?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className={`text-sm ${bold ? 'font-medium text-navy-900 dark:text-white' : 'text-navy-600 dark:text-navy-300'}`}>
@@ -553,5 +553,5 @@ function CostRow({ label, value, highlight, bold }: { label: string; value: numb
       </span>
     </div>
   );
-}
+});
 
