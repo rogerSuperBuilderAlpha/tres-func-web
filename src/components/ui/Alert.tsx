@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
 type AlertVariant = 'info' | 'success' | 'warning' | 'danger';
 
@@ -10,6 +10,14 @@ interface AlertProps {
   children: ReactNode;
   className?: string;
 }
+
+// Map variants to ARIA roles
+const ARIA_ROLES: Record<AlertVariant, 'status' | 'alert'> = {
+  info: 'status',
+  success: 'status',
+  warning: 'alert',
+  danger: 'alert',
+};
 
 const DEFAULT_ICONS: Record<AlertVariant, ReactNode> = {
   info: (
@@ -44,13 +52,17 @@ const STYLES: Record<AlertVariant, string> = {
     'bg-danger-50 border-danger-200 text-danger-700 dark:bg-danger-900/20 dark:border-danger-800 dark:text-danger-200',
 };
 
-export function Alert({ variant = 'info', icon, children, className }: AlertProps) {
+export const Alert = memo(function Alert({ variant = 'info', icon, children, className }: AlertProps) {
   return (
-    <div className={`p-3 border rounded-xl text-sm flex items-center gap-2 ${STYLES[variant]} ${className || ''}`}>
-      <span className="flex-shrink-0">{icon ?? DEFAULT_ICONS[variant]}</span>
+    <div 
+      role={ARIA_ROLES[variant]}
+      aria-live={variant === 'danger' || variant === 'warning' ? 'assertive' : 'polite'}
+      className={`p-3 border rounded-xl text-sm flex items-center gap-2 ${STYLES[variant]} ${className || ''}`}
+    >
+      <span className="flex-shrink-0" aria-hidden="true">{icon ?? DEFAULT_ICONS[variant]}</span>
       <div className="min-w-0">{children}</div>
     </div>
   );
-}
+});
 
 

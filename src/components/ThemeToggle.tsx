@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 
-export function ThemeToggle() {
+export const ThemeToggle = memo(function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -15,24 +15,31 @@ export function ThemeToggle() {
     document.documentElement.classList.toggle('dark', shouldBeDark);
   }, []);
 
-  const toggle = () => {
-    const newValue = !isDark;
-    setIsDark(newValue);
-    document.documentElement.classList.toggle('dark', newValue);
-    localStorage.setItem('theme', newValue ? 'dark' : 'light');
-  };
+  const toggle = useCallback(() => {
+    setIsDark(prev => {
+      const newValue = !prev;
+      document.documentElement.classList.toggle('dark', newValue);
+      localStorage.setItem('theme', newValue ? 'dark' : 'light');
+      return newValue;
+    });
+  }, []);
+
+  const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
 
   return (
     <button
       onClick={toggle}
       className="relative p-2 rounded-lg bg-navy-100 dark:bg-navy-800 hover:bg-navy-200 dark:hover:bg-navy-700 transition"
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={label}
+      aria-pressed={isDark}
+      type="button"
     >
       {/* Sun icon */}
       <svg
         className={`w-5 h-5 text-gold-500 transition-all ${isDark ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`}
         fill="currentColor"
         viewBox="0 0 20 20"
+        aria-hidden="true"
       >
         <path
           fillRule="evenodd"
@@ -45,12 +52,13 @@ export function ThemeToggle() {
         className={`w-5 h-5 text-gold-400 absolute top-2 left-2 transition-all ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`}
         fill="currentColor"
         viewBox="0 0 20 20"
+        aria-hidden="true"
       >
         <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
       </svg>
     </button>
   );
-}
+});
 
 
 

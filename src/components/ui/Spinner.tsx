@@ -1,8 +1,12 @@
 'use client';
 
+import { memo } from 'react';
+
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  /** Accessible label for screen readers */
+  label?: string;
 }
 
 const sizeClasses = {
@@ -11,13 +15,19 @@ const sizeClasses = {
   lg: 'h-6 w-6',
 };
 
-export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
+export const Spinner = memo(function Spinner({ 
+  size = 'md', 
+  className = '',
+  label = 'Loading...'
+}: SpinnerProps) {
   return (
     <svg
       className={`animate-spin ${sizeClasses[size]} ${className}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
+      role="status"
+      aria-label={label}
     >
       <circle
         className="opacity-25"
@@ -34,7 +44,7 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
       />
     </svg>
   );
-}
+});
 
 
 
