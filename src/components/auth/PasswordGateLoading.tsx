@@ -1,8 +1,9 @@
 'use client';
 
+import { memo } from 'react';
 import { Spinner } from '@/components/ui';
 
-export function PasswordGateLoading() {
+export const PasswordGateLoading = memo(function PasswordGateLoading() {
   return (
     <div className="min-h-screen bg-grid-pattern flex items-center justify-center">
       <div className="glass rounded-2xl p-8 shadow-2xl">
@@ -10,6 +11,4 @@ export function PasswordGateLoading() {
       </div>
     </div>
   );
-}
-
-
+});
