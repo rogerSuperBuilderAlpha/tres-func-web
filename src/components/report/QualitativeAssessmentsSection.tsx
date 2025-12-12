@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { QualitativeAssessments } from '@/types';
 import { QualitativeAssessmentCard } from './QualitativeAssessmentCard';
 
@@ -7,7 +8,7 @@ interface QualitativeAssessmentsSectionProps {
   assessments?: QualitativeAssessments;
 }
 
-export function QualitativeAssessmentsSection({ assessments }: QualitativeAssessmentsSectionProps) {
+export const QualitativeAssessmentsSection = memo(function QualitativeAssessmentsSection({ assessments }: QualitativeAssessmentsSectionProps) {
   if (!assessments) return null;
 
   return (
@@ -48,7 +49,4 @@ export function QualitativeAssessmentsSection({ assessments }: QualitativeAssess
       </div>
     </div>
   );
-}
-
-
-
+});

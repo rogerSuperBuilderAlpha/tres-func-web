@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { EvaluationReportData } from '@/types';
 import { ScoreCard } from './ScoreCard';
 import { getRubricAssessment, isRubricKey, RUBRIC_LABELS } from './utils';
@@ -8,7 +9,7 @@ interface RubricScoreGridProps {
   report: EvaluationReportData;
 }
 
-export function RubricScoreGrid({ report }: RubricScoreGridProps) {
+export const RubricScoreGrid = memo(function RubricScoreGrid({ report }: RubricScoreGridProps) {
   const rubric = report.scores?.rubric;
 
   return (
@@ -28,6 +29,4 @@ export function RubricScoreGrid({ report }: RubricScoreGridProps) {
         })}
     </div>
   );
-}
-
-
+});

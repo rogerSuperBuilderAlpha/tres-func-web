@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { ManualReview } from '@/types';
 import { ReviewCard } from './ReviewCard';
 
@@ -8,7 +9,7 @@ interface ManualReviewsSectionProps {
   onSelect: (review: ManualReview) => void;
 }
 
-export function ManualReviewsSection({ reviews, onSelect }: ManualReviewsSectionProps) {
+export const ManualReviewsSection = memo(function ManualReviewsSection({ reviews, onSelect }: ManualReviewsSectionProps) {
   if (reviews.length === 0) return null;
 
   return (
@@ -40,7 +41,4 @@ export function ManualReviewsSection({ reviews, onSelect }: ManualReviewsSection
       </div>
     </div>
   );
-}
-
-
-
+});
