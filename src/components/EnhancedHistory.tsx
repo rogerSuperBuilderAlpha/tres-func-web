@@ -81,14 +81,14 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
     return result;
   }, [filteredEvaluations, sortField, sortOrder]);
 
-  const toggleRepoExpanded = (repoUrl: string) => {
+  const toggleRepoExpanded = useCallback((repoUrl: string) => {
     setExpandedRepos(prev => {
       const next = new Set(prev);
       if (next.has(repoUrl)) next.delete(repoUrl);
       else next.add(repoUrl);
       return next;
     });
-  };
+  }, []);
 
   if (loading) {
     return <HistoryLoadingSkeleton />;
