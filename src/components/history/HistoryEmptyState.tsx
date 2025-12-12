@@ -1,10 +1,12 @@
 'use client';
 
+import { memo } from 'react';
+
 interface HistoryEmptyStateProps {
   hasFilters: boolean;
 }
 
-export function HistoryEmptyState({ hasFilters }: HistoryEmptyStateProps) {
+export const HistoryEmptyState = memo(function HistoryEmptyState({ hasFilters }: HistoryEmptyStateProps) {
   return (
     <div className="p-8 text-center">
       <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-navy-100 dark:bg-navy-700 flex items-center justify-center">
@@ -18,6 +20,4 @@ export function HistoryEmptyState({ hasFilters }: HistoryEmptyStateProps) {
       </p>
     </div>
   );
-}
-
-
+});

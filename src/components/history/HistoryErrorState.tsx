@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Alert } from '@/components/ui';
 
 interface HistoryErrorStateProps {
@@ -7,7 +8,7 @@ interface HistoryErrorStateProps {
   onRetry: () => void;
 }
 
-export function HistoryErrorState({ error, onRetry }: HistoryErrorStateProps) {
+export const HistoryErrorState = memo(function HistoryErrorState({ error, onRetry }: HistoryErrorStateProps) {
   return (
     <div className="glass rounded-2xl shadow-xl border border-navy-100 p-6 dark:bg-navy-900/90 dark:border-navy-700">
       <div className="text-center py-8">
@@ -28,6 +29,4 @@ export function HistoryErrorState({ error, onRetry }: HistoryErrorStateProps) {
       </div>
     </div>
   );
-}
-
-
+});

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Badge } from '@/components/ui';
 
 interface PreflightSummaryProps {
@@ -21,7 +22,7 @@ const testSuites = [
   { name: 'Report Generation', icon: '📊', time: '~90s' },
 ];
 
-export function PreflightSummary({ repoValid, siteValid, isReady }: PreflightSummaryProps) {
+export const PreflightSummary = memo(function PreflightSummary({ repoValid, siteValid, isReady }: PreflightSummaryProps) {
   const checksPass = repoValid && siteValid;
 
   return (
@@ -86,8 +87,4 @@ export function PreflightSummary({ repoValid, siteValid, isReady }: PreflightSum
       </div>
     </div>
   );
-}
-
-
-
-
+});
