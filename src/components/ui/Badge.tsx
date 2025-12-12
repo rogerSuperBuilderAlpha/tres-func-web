@@ -1,9 +1,11 @@
 'use client';
 
+import { memo, type ReactNode } from 'react';
+
 interface BadgeProps {
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md';
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
@@ -20,7 +22,7 @@ const sizeClasses = {
   md: 'px-2.5 py-1 text-sm',
 };
 
-export function Badge({ variant = 'default', size = 'sm', children, className = '' }: BadgeProps) {
+export const Badge = memo(function Badge({ variant = 'default', size = 'sm', children, className = '' }: BadgeProps) {
   return (
     <span
       className={`inline-flex items-center font-medium rounded-full border ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
@@ -28,5 +30,5 @@ export function Badge({ variant = 'default', size = 'sm', children, className = 
       {children}
     </span>
   );
-}
+});
 

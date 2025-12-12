@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { getScoreColor, getGradeLabel } from '@/lib/utils';
 
 interface RubricInfo {
@@ -14,7 +15,7 @@ interface ScoreCardProps {
   assessment: string;
 }
 
-export function ScoreCard({ value, rubricInfo, assessment }: ScoreCardProps) {
+export const ScoreCard = memo(function ScoreCard({ value, rubricInfo, assessment }: ScoreCardProps) {
   const safeValue = Math.max(0, value || 0);
   const percentage = Math.round((safeValue / rubricInfo.max) * 100);
   const grade = getGradeLabel(percentage);
@@ -46,8 +47,4 @@ export function ScoreCard({ value, rubricInfo, assessment }: ScoreCardProps) {
       <p className="text-sm text-navy-600 leading-relaxed mt-3">{assessment}</p>
     </div>
   );
-}
-
-
-
-
+});

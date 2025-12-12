@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
 interface StatCardProps {
   label: string;
@@ -10,7 +10,7 @@ interface StatCardProps {
   color: 'navy' | 'gold' | 'success' | 'danger';
 }
 
-export function StatCard({ label, value, subtext, icon, color }: StatCardProps) {
+export const StatCard = memo(function StatCard({ label, value, subtext, icon, color }: StatCardProps) {
   const colorClasses = {
     navy: 'bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300',
     gold: 'bg-gold-100 dark:bg-gold-900/50 text-gold-600 dark:text-gold-400',
@@ -28,6 +28,4 @@ export function StatCard({ label, value, subtext, icon, color }: StatCardProps) 
       </div>
     </div>
   );
-}
-
-
+});

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { EvaluationSummary } from '@/types';
 import { getPerformanceTier, formatDate, extractRepoName } from '@/lib/utils';
 import { Badge } from '@/components/ui';
@@ -9,7 +10,7 @@ interface EvaluationListItemProps {
   onClick: () => void;
 }
 
-export function EvaluationListItem({ evaluation, onClick }: EvaluationListItemProps) {
+export const EvaluationListItem = memo(function EvaluationListItem({ evaluation, onClick }: EvaluationListItemProps) {
   const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
   const tier = getPerformanceTier(score);
 
@@ -45,8 +46,4 @@ export function EvaluationListItem({ evaluation, onClick }: EvaluationListItemPr
       </div>
     </div>
   );
-}
-
-
-
-
+});

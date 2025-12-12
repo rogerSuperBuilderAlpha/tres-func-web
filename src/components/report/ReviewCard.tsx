@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { ManualReview } from '@/types';
 import { formatDate } from '@/lib/utils';
 
@@ -20,7 +21,7 @@ interface ReviewCardProps {
   onClick: () => void;
 }
 
-export function ReviewCard({ review, onClick }: ReviewCardProps) {
+export const ReviewCard = memo(function ReviewCard({ review, onClick }: ReviewCardProps) {
   const assessmentPreview = review.answers.recommendation || review.answers.strengths || review.answers.notes || '';
   const truncated = assessmentPreview.length > 80 ? assessmentPreview.slice(0, 80) + '...' : assessmentPreview;
   
@@ -53,8 +54,4 @@ export function ReviewCard({ review, onClick }: ReviewCardProps) {
       </div>
     </button>
   );
-}
-
-
-
-
+});
