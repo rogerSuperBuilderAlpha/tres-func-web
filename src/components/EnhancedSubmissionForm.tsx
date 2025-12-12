@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { isValidRepoUrl, isValidUrl } from '@/lib/utils';
 import { fetchRepoMetadata, checkSiteAccessibility, RepoMetadata, SiteMetadata } from '@/lib/validators';
 import { Spinner } from '@/components/ui';
@@ -9,6 +9,7 @@ import { SitePreview } from './SitePreview';
 import { PreflightSummary } from './PreflightSummary';
 import { AdvancedOptions } from './submission/AdvancedOptions';
 import { ValidatedUrlInput, type ValidationState } from './submission/ValidatedUrlInput';
+import { useDebouncedEffect } from '@/hooks';
 
 interface EnhancedSubmissionFormProps {
   onSubmit: (repoUrl: string, deployedUrl: string, backendRepoUrl?: string, options?: SubmissionOptions) => void;
@@ -19,14 +20,6 @@ export interface SubmissionOptions {
   focusMode?: 'balanced' | 'security' | 'ux' | 'performance';
   skipTests?: string[];
   notes?: string;
-}
-
-function useDebouncedEffect(effect: () => void, deps: unknown[], delayMs: number) {
-  useEffect(() => {
-    const timer = setTimeout(effect, delayMs);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, delayMs]);
 }
 
 export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmissionFormProps) {
