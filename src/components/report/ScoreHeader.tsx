@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { CSSProperties } from 'react';
 import { getScoreColor } from '@/lib/utils';
 
@@ -10,7 +11,7 @@ interface ScoreHeaderProps {
   maxScore: number;
 }
 
-export function ScoreHeader({ tierLabel, tierStyle, overallScore, maxScore }: ScoreHeaderProps) {
+export const ScoreHeader = memo(function ScoreHeader({ tierLabel, tierStyle, overallScore, maxScore }: ScoreHeaderProps) {
   return (
     <div className="text-center mb-8">
       <div className="inline-block px-8 py-3 rounded-2xl shadow-lg mb-3" style={tierStyle}>
@@ -20,7 +21,4 @@ export function ScoreHeader({ tierLabel, tierStyle, overallScore, maxScore }: Sc
       <p className="text-navy-500 mt-1">out of {maxScore} points</p>
     </div>
   );
-}
-
-
-
+});

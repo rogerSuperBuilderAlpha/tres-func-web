@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import type { EvaluationReportData } from '@/types';
 import { formatDeployedDisplayUrl, formatRepoDisplayUrl } from './utils';
 
@@ -7,8 +8,11 @@ interface LinksDetailsCardProps {
   report: EvaluationReportData;
 }
 
-export function LinksDetailsCard({ report }: LinksDetailsCardProps) {
-  const evaluatedAtDisplay = report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown';
+export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: LinksDetailsCardProps) {
+  const evaluatedAtDisplay = useMemo(
+    () => (report.evaluatedAt ? new Date(report.evaluatedAt).toLocaleString() : 'Unknown'),
+    [report.evaluatedAt]
+  );
 
   return (
     <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
@@ -70,7 +74,4 @@ export function LinksDetailsCard({ report }: LinksDetailsCardProps) {
       </div>
     </div>
   );
-}
-
-
-
+});

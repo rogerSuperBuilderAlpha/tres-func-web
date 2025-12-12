@@ -174,10 +174,6 @@ export default function Home() {
         ) : evaluation.status === 'COMPLETED' && evaluation.report ? (
           <EvaluationReport
             report={evaluation.report}
-            onReset={handleReset}
-            pdfStatus={evaluation.pdfStatus}
-            pdfUrl={evaluation.pdfUrl}
-            onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
             manualReviews={evaluation.manualReviews}
           />
         ) : null}

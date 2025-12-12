@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { AccordionItem } from './AccordionItem';
 
 interface SummaryAccordionCardProps {
@@ -7,7 +8,7 @@ interface SummaryAccordionCardProps {
   concerns: string[];
 }
 
-export function SummaryAccordionCard({ strengths, concerns }: SummaryAccordionCardProps) {
+export const SummaryAccordionCard = memo(function SummaryAccordionCard({ strengths, concerns }: SummaryAccordionCardProps) {
   return (
     <div className="bg-white rounded-xl border border-navy-200 shadow-sm">
       <div className="px-5">
@@ -45,7 +46,4 @@ export function SummaryAccordionCard({ strengths, concerns }: SummaryAccordionCa
       </div>
     </div>
   );
-}
-
-
-
+});
