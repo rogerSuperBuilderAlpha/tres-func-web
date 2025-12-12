@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState } from 'react';
 import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
 import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
@@ -9,214 +9,23 @@ import { ManualReviewModal } from '@/components/ManualReviewModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
-import type { Evaluation } from '@/types';
+import { useEvaluationPolling } from '@/hooks';
 
 export default function Home() {
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showManualReview, setShowManualReview] = useState(false);
-  const pdfPollRef = useRef<NodeJS.Timeout | null>(null);
 
-  const pollPdfStatus = useCallback((evaluationId: string) => {
-    if (pdfPollRef.current) clearTimeout(pdfPollRef.current);
+  const [
+    { evaluation, error, isSubmitting, isLoadingHistory },
+    { handleSubmit, handleSelectEvaluation, handleRetryPdf, handleReset },
+  ] = useEvaluationPolling({ apiBase: API_BASE });
 
-    const poll = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/status/${evaluationId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setEvaluation(prev => prev ? { ...prev, pdfStatus: data.pdfStatus, pdfUrl: data.pdfUrl } : null);
-          if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') {
-            pdfPollRef.current = setTimeout(poll, 3000);
-          }
-        }
-      } catch (err) {
-        console.error('PDF status poll error:', err);
-      }
-    };
-    pdfPollRef.current = setTimeout(poll, 2000);
-  }, []);
-
-  const handleSubmit = async (repoUrl: string, deployedUrl: string, backendRepoUrl?: string, options?: SubmissionOptions) => {
-    setIsSubmitting(true);
-    setError(null);
-    setEvaluation(null);
-
-    try {
-      const response = await fetch(`${API_BASE}/evaluate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl, deployedUrl, backendRepoUrl, ...options }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || data.message || `API error: ${response.status}`);
-      if (!data.evaluationId) throw new Error('Invalid response: missing evaluationId');
-
-      setEvaluation({
-        evaluationId: data.evaluationId,
-        status: 'PROCESSING',
-        reportUrl: data.reportUrl,
-        startTime: new Date().toISOString(),
-        repoUrl,
-        deployedUrl,
-      });
-      pollStatus(data.evaluationId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit evaluation');
-      setEvaluation(null);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const pollStatus = useCallback(async (evaluationId: string) => {
-    // Extended polling - keep polling for up to 25 minutes (300 attempts at 5s intervals)
-    // Claude Sonnet 4.5 takes ~10 minutes average to generate detailed responses
-    // The UI will show appropriate warnings after 8-12 minutes
-    const maxAttempts = 300;
-    let attempts = 0;
-    let consecutiveErrors = 0;
-    let lastProgressChange = Date.now();
-    let lastProgressStr = '';
-
-    const poll = async () => {
-      attempts++;
-      try {
-        const response = await fetch(`${API_BASE}/status/${evaluationId}`);
-        if (!response.ok) throw new Error(`Status check failed: ${response.status}`);
-        const data = await response.json();
-        consecutiveErrors = 0;
-
-        // Track if progress is changing
-        const currentProgressStr = JSON.stringify(data.progress);
-        if (currentProgressStr !== lastProgressStr) {
-          lastProgressChange = Date.now();
-          lastProgressStr = currentProgressStr;
-        }
-
-        setEvaluation(prev => prev ? {
-          ...prev,
-          progress: data.progress,
-          startTime: data.startTime || prev.startTime,
-          detailedProgress: data.detailedProgress,
-        } : null);
-
-        if (data.status === 'COMPLETED' && data.report) {
-          setEvaluation({
-            evaluationId,
-            status: 'COMPLETED',
-            reportUrl: data.reportUrl,
-            report: data.report,
-            pdfStatus: data.pdfStatus,
-            pdfUrl: data.pdfUrl,
-            manualReviews: data.manualReviews,
-          });
-          if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
-          return;
-        }
-        
-        if (data.status === 'FAILED') {
-          setEvaluation({ evaluationId, status: 'FAILED', error: data.error });
-          setError(data.error || 'Evaluation failed.');
-          return;
-        }
-
-        // Check if evaluation seems truly stuck (no progress for 10 minutes)
-        // Claude Sonnet 4.5 AI calls can take 3-4 minutes each
-        const stuckTime = Date.now() - lastProgressChange;
-        if (stuckTime > 600000) { // 10 minutes with no progress change
-          // Show a soft error but don't stop polling entirely
-          setError('Evaluation appears to be stuck. You can wait or try again later.');
-        }
-        
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
-        } else {
-          // After 25 minutes, give up but provide helpful message
-          const runningTests = data.progress 
-            ? Object.entries(data.progress)
-                .filter(([_, status]) => status === 'running')
-                .map(([key]) => key.replace(/([A-Z])/g, ' $1').trim())
-            : [];
-          
-          const stuckMsg = runningTests.length > 0 
-            ? `Tests stuck on: ${runningTests.join(', ')}. This usually indicates an issue with the candidate's application.`
-            : 'Evaluation timed out after 25 minutes.';
-          
-          setError(stuckMsg);
-          // Don't mark as FAILED yet - let user see the partial progress
-        }
-      } catch (err) {
-        consecutiveErrors++;
-        if (consecutiveErrors >= 5) {
-          setError('Lost connection to server. The evaluation may still be running. Try refreshing in a few minutes.');
-          return;
-        }
-        if (attempts < maxAttempts) setTimeout(poll, 5000 * Math.min(consecutiveErrors, 3));
-      }
-    };
-    poll();
-  }, [pollPdfStatus]);
-
-  const handleReset = () => { setEvaluation(null); setError(null); };
-
-  const handleRetryPdf = async (evaluationId: string) => {
-    setEvaluation(prev => prev ? { ...prev, pdfStatus: 'generating' } : null);
-    try {
-      const response = await fetch(`${API_BASE}/retry-pdf/${evaluationId}`, { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to retry PDF generation');
-      const pollPdf = async () => {
-        const statusResponse = await fetch(`${API_BASE}/status/${evaluationId}`);
-        if (statusResponse.ok) {
-          const data = await statusResponse.json();
-          setEvaluation(prev => prev ? { ...prev, pdfStatus: data.pdfStatus, pdfUrl: data.pdfUrl } : null);
-          if (data.pdfStatus === 'generating') setTimeout(pollPdf, 3000);
-        }
-      };
-      setTimeout(pollPdf, 2000);
-    } catch {
-      setEvaluation(prev => prev ? { ...prev, pdfStatus: 'failed' } : null);
-    }
-  };
-
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-
-  const handleSelectEvaluation = async (evaluationId: string) => {
-    setError(null);
-    setIsLoadingHistory(true);
-    
-    try {
-      const response = await fetch(`${API_BASE}/status/${evaluationId}`);
-      if (!response.ok) throw new Error('Failed to load evaluation');
-      const data = await response.json();
-
-      if (data.status === 'COMPLETED' && data.report) {
-        setEvaluation({
-          evaluationId,
-          status: 'COMPLETED',
-          reportUrl: data.reportUrl,
-          report: data.report,
-          pdfStatus: data.pdfStatus,
-          pdfUrl: data.pdfUrl,
-          manualReviews: data.manualReviews,
-        });
-        if (data.pdfStatus === 'pending' || data.pdfStatus === 'generating') pollPdfStatus(evaluationId);
-      } else if (data.status === 'FAILED') {
-        setError(data.error || 'This evaluation failed');
-        setEvaluation(null);
-      } else {
-        // Still processing - show the processing screen
-        setEvaluation({ evaluationId, status: 'PROCESSING' });
-        pollStatus(evaluationId);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load evaluation');
-      setEvaluation(null);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
+  // Wrapper for form submission with proper typing
+  const onSubmit = (
+    repoUrl: string,
+    deployedUrl: string,
+    backendRepoUrl?: string,
+    options?: SubmissionOptions
+  ) => handleSubmit(repoUrl, deployedUrl, backendRepoUrl, options as object);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern dark:bg-navy-950">
@@ -337,7 +146,7 @@ export default function Home() {
                 <TabsContent value="new">
                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     <div className="lg:col-span-3">
-                      <EnhancedSubmissionForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+                      <EnhancedSubmissionForm onSubmit={onSubmit} isSubmitting={isSubmitting} />
                     </div>
                     <div className="lg:col-span-2">
                       <EnhancedHistory apiBase={API_BASE} onSelectEvaluation={handleSelectEvaluation} />

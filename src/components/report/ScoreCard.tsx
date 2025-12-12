@@ -50,3 +50,4 @@ export function ScoreCard({ value, rubricInfo, assessment }: ScoreCardProps) {
 
 
 
+

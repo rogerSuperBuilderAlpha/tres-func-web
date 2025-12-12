@@ -554,3 +554,4 @@ function CostRow({ label, value, highlight, bold }: { label: string; value: numb
     </div>
   );
 }
+

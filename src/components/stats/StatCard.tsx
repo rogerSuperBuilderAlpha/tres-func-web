@@ -30,3 +30,4 @@ export function StatCard({ label, value, subtext, icon, color }: StatCardProps) 
   );
 }
 
+

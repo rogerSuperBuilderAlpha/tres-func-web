@@ -82,3 +82,4 @@ export function AdvancedOptions({ focusMode, onFocusModeChange, notes, onNotesCh
   );
 }
 
+

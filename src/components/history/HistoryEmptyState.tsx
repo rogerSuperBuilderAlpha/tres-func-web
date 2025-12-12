@@ -20,3 +20,4 @@ export function HistoryEmptyState({ hasFilters }: HistoryEmptyStateProps) {
   );
 }
 
+
