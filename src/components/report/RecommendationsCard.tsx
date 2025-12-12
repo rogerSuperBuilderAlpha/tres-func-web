@@ -1,10 +1,12 @@
 'use client';
 
+import { memo } from 'react';
+
 interface RecommendationsCardProps {
   recommendations: string[];
 }
 
-export function RecommendationsCard({ recommendations }: RecommendationsCardProps) {
+export const RecommendationsCard = memo(function RecommendationsCard({ recommendations }: RecommendationsCardProps) {
   if (recommendations.length === 0) return null;
 
   return (
@@ -30,7 +32,4 @@ export function RecommendationsCard({ recommendations }: RecommendationsCardProp
       </div>
     </div>
   );
-}
-
-
-
+});

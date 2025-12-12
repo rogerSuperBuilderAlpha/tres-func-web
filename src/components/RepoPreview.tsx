@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { RepoMetadata } from '@/lib/validators';
 import { Badge } from '@/components/ui';
 
@@ -8,18 +9,20 @@ interface RepoPreviewProps {
   label?: string;
 }
 
-export function RepoPreview({ metadata, label }: RepoPreviewProps) {
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'today';
-    if (diffDays === 1) return 'yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
-  };
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  return date.toLocaleDateString();
+}
+
+export const RepoPreview = memo(function RepoPreview({ metadata, label }: RepoPreviewProps) {
+  const formattedDate = useMemo(() => formatRelativeDate(metadata.lastUpdated), [metadata.lastUpdated]);
 
   return (
     <div className="bg-gradient-to-br from-navy-50 to-navy-100/50 rounded-xl p-4 border border-navy-200">
@@ -72,7 +75,7 @@ export function RepoPreview({ metadata, label }: RepoPreviewProps) {
               </svg>
               {metadata.forks}
             </span>
-            <span>Updated {formatDate(metadata.lastUpdated)}</span>
+            <span>Updated {formattedDate}</span>
           </div>
         </div>
       </div>
@@ -87,8 +90,4 @@ export function RepoPreview({ metadata, label }: RepoPreviewProps) {
       )}
     </div>
   );
-}
-
-
-
-
+});

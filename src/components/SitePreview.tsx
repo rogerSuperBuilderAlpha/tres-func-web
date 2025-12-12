@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { SiteMetadata } from '@/lib/validators';
 import { Badge } from '@/components/ui';
 
@@ -18,8 +19,9 @@ const platformInfo: Record<string, { name: string; color: string; icon: string }
   unknown: { name: 'Custom', color: 'bg-navy-500 text-white', icon: '●' },
 };
 
-export function SitePreview({ url, metadata }: SitePreviewProps) {
-  const platform = platformInfo[metadata.platform || 'unknown'];
+export const SitePreview = memo(function SitePreview({ url, metadata }: SitePreviewProps) {
+  const platform = useMemo(() => platformInfo[metadata.platform || 'unknown'], [metadata.platform]);
+  const displayUrl = useMemo(() => url.replace(/^https?:\/\//, ''), [url]);
 
   return (
     <div className="bg-gradient-to-br from-navy-50 to-navy-100/50 rounded-xl p-4 border border-navy-200">
@@ -49,7 +51,7 @@ export function SitePreview({ url, metadata }: SitePreviewProps) {
               rel="noopener noreferrer"
               className="font-medium text-navy-900 hover:text-gold-600 transition truncate text-sm"
             >
-              {url.replace(/^https?:\/\//, '')}
+              {displayUrl}
             </a>
             <Badge variant={metadata.accessible ? 'success' : 'danger'} size="sm">
               {metadata.accessible ? 'Online' : 'Unreachable'}
@@ -90,8 +92,4 @@ export function SitePreview({ url, metadata }: SitePreviewProps) {
       </div>
     </div>
   );
-}
-
-
-
-
+});

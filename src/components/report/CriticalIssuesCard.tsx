@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { CriticalIssue } from '@/types';
 import { formatCriticalIssue } from './utils';
 
@@ -7,7 +8,7 @@ interface CriticalIssuesCardProps {
   issues: Array<string | CriticalIssue>;
 }
 
-export function CriticalIssuesCard({ issues }: CriticalIssuesCardProps) {
+export const CriticalIssuesCard = memo(function CriticalIssuesCard({ issues }: CriticalIssuesCardProps) {
   if (issues.length === 0) return null;
 
   return (
@@ -34,7 +35,4 @@ export function CriticalIssuesCard({ issues }: CriticalIssuesCardProps) {
       </ul>
     </div>
   );
-}
-
-
-
+});

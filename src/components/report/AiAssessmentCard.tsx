@@ -1,12 +1,13 @@
 'use client';
 
+import { memo } from 'react';
 import type { AiExecutiveSummary } from '@/types';
 
 interface AiAssessmentCardProps {
   aiExecutiveSummary: AiExecutiveSummary;
 }
 
-export function AiAssessmentCard({ aiExecutiveSummary }: AiAssessmentCardProps) {
+export const AiAssessmentCard = memo(function AiAssessmentCard({ aiExecutiveSummary }: AiAssessmentCardProps) {
   return (
     <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
       <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
@@ -40,7 +41,4 @@ export function AiAssessmentCard({ aiExecutiveSummary }: AiAssessmentCardProps) 
       )}
     </div>
   );
-}
-
-
-
+});
