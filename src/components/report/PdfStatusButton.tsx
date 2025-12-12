@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Spinner } from '@/components/ui';
 
 interface PdfStatusButtonProps {
@@ -8,7 +9,7 @@ interface PdfStatusButtonProps {
   onRetryPdf?: () => void;
 }
 
-export function PdfStatusButton({ 
+export const PdfStatusButton = memo(function PdfStatusButton({ 
   pdfStatus, 
   pdfUrl, 
   onRetryPdf 
@@ -60,8 +61,4 @@ export function PdfStatusButton({
       <span className="hidden sm:inline">PDF pending...</span>
     </div>
   );
-}
-
-
-
-
+});
