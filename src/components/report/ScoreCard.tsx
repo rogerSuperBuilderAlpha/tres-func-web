@@ -48,3 +48,4 @@ export const ScoreCard = memo(function ScoreCard({ value, rubricInfo, assessment
     </div>
   );
 });
+

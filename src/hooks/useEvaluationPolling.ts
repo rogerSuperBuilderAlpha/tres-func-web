@@ -297,3 +297,4 @@ export function useEvaluationPolling({
     { handleSubmit, handleSelectEvaluation, handleRetryPdf, handleReset, clearError },
   ];
 }
+

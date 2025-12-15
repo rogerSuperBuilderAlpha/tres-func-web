@@ -2,7 +2,7 @@ export const AUTH_KEY = 'ttb_auth_token';
 export const AUTH_EXPIRY_DAYS = 7;
 
 // SHA-256 hash - password is never stored in plain text
-export const VALID_HASH = 'c97ace4c8fef2cee8fa0f3c9f52aab18dbd4f42438afe362ffb8f75ce4c04b84';
+export const VALID_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8';
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -51,5 +51,6 @@ export async function verifyToken(token: string): Promise<boolean> {
     return false;
   }
 }
+
 
 

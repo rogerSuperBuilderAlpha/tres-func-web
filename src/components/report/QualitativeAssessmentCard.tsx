@@ -105,3 +105,4 @@ export const QualitativeAssessmentCard = memo(function QualitativeAssessmentCard
     </div>
   );
 });
+

@@ -47,3 +47,4 @@ export const SummaryAccordionCard = memo(function SummaryAccordionCard({ strengt
     </div>
   );
 });
+

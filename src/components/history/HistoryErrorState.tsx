@@ -30,3 +30,4 @@ export const HistoryErrorState = memo(function HistoryErrorState({ error, onRetr
     </div>
   );
 });
+

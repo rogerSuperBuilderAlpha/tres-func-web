@@ -22,3 +22,4 @@ export const ScoreHeader = memo(function ScoreHeader({ tierLabel, tierStyle, ove
     </div>
   );
 });
+

@@ -42,3 +42,4 @@ export const AiAssessmentCard = memo(function AiAssessmentCard({ aiExecutiveSumm
     </div>
   );
 });
+

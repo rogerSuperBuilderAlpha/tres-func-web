@@ -12,3 +12,4 @@ export const PasswordGateLoading = memo(function PasswordGateLoading() {
     </div>
   );
 });
+
