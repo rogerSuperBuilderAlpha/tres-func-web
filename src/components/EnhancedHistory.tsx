@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, memo } from 'react';
-import { DashboardStats } from './DashboardStats';
+import dynamic from 'next/dynamic';
 import { AnalyticsPortal } from './analytics';
 import {
   EvaluationListItem,
@@ -12,6 +12,11 @@ import {
   RepoGroupItem,
   useHistoryData,
 } from './history';
+
+// Lazy load DashboardStats since it's not always visible
+const DashboardStats = dynamic(() => import('./DashboardStats').then(mod => ({ default: mod.DashboardStats })), {
+  ssr: false,
+});
 
 interface EnhancedHistoryProps {
   apiBase: string;

@@ -1,16 +1,31 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
-import { BatchSubmissionForm, type BatchSubmissionResult } from '@/components/BatchSubmissionForm';
-import { EvaluationStatus } from '@/components/EvaluationStatus';
-import { EvaluationReport } from '@/components/EvaluationReport';
+import { type BatchSubmissionResult } from '@/components/BatchSubmissionForm';
 import { EnhancedHistory } from '@/components/EnhancedHistory';
-import { ManualReviewModal } from '@/components/ManualReviewModal';
 import { PageHeader, ErrorBanner, LoadingOverlay } from '@/components/layout';
-import { Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon, ToggleGroup } from '@/components/ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon, ToggleGroup, Spinner } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import { useEvaluationPolling, useBatchMutation } from '@/hooks';
+
+// Lazy load components not needed on initial render
+const BatchSubmissionForm = dynamic(() => import('@/components/BatchSubmissionForm').then(mod => ({ default: mod.BatchSubmissionForm })), {
+  loading: () => <div className="flex items-center justify-center p-8"><Spinner size="lg" /></div>,
+});
+
+const EvaluationStatus = dynamic(() => import('@/components/EvaluationStatus').then(mod => ({ default: mod.EvaluationStatus })), {
+  loading: () => <div className="flex items-center justify-center p-8"><Spinner size="lg" /></div>,
+});
+
+const EvaluationReport = dynamic(() => import('@/components/EvaluationReport').then(mod => ({ default: mod.EvaluationReport })), {
+  loading: () => <div className="flex items-center justify-center p-8"><Spinner size="lg" /></div>,
+});
+
+const ManualReviewModal = dynamic(() => import('@/components/ManualReviewModal').then(mod => ({ default: mod.ManualReviewModal })), {
+  ssr: false,
+});
 
 const SUBMISSION_MODE_OPTIONS = [
   { value: 'single' as const, label: 'Single' },
