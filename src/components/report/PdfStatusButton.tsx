@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { Spinner } from '@/components/ui';
+import { Spinner, DownloadIcon, RefreshIcon, DocumentTextIcon } from '@/components/ui';
 
 interface PdfStatusButtonProps {
   pdfStatus?: 'pending' | 'generating' | 'ready' | 'failed';
@@ -22,9 +22,7 @@ export const PdfStatusButton = memo(function PdfStatusButton({
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-navy-700 to-navy-900 text-white rounded-lg hover:from-navy-600 hover:to-navy-800 transition text-sm font-medium shadow-md"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
+        <DownloadIcon className="w-4 h-4" />
         <span className="hidden sm:inline">Download PDF</span>
       </a>
     );
@@ -45,9 +43,7 @@ export const PdfStatusButton = memo(function PdfStatusButton({
         onClick={onRetryPdf}
         className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-danger-100 text-danger-700 rounded-lg hover:bg-danger-200 transition text-sm font-medium"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
+        <RefreshIcon className="w-4 h-4" />
         <span className="hidden sm:inline">Retry PDF</span>
       </button>
     );
@@ -55,9 +51,7 @@ export const PdfStatusButton = memo(function PdfStatusButton({
   
   return (
     <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-navy-100 text-navy-400 rounded-lg text-sm">
-      <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
+      <DocumentTextIcon className="w-4 h-4 animate-pulse" />
       <span className="hidden sm:inline">PDF pending...</span>
     </div>
   );
