@@ -22,3 +22,4 @@ export const HistoryEmptyState = memo(function HistoryEmptyState({ hasFilters }:
   );
 });
 
+

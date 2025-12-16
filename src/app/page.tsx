@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
+import { BatchSubmissionForm } from '@/components/BatchSubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
 import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
 import { EnhancedHistory } from '@/components/EnhancedHistory';
@@ -13,6 +14,9 @@ import { useEvaluationPolling } from '@/hooks';
 
 export default function Home() {
   const [showManualReview, setShowManualReview] = useState(false);
+  const [submissionMode, setSubmissionMode] = useState<'single' | 'batch'>('single');
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
+  const [batchCount, setBatchCount] = useState(0);
 
   const [
     { evaluation, error, isSubmitting, isLoadingHistory },
@@ -26,6 +30,50 @@ export default function Home() {
     backendRepoUrl?: string,
     options?: SubmissionOptions
   ) => handleSubmit(repoUrl, deployedUrl, backendRepoUrl, options as object);
+
+  // Batch submission handler
+  const onBatchSubmit = async (submissions: Array<{ repoUrl: string; deployedUrl: string }>) => {
+    setBatchSubmitting(true);
+    setBatchCount(submissions.length);
+    
+    try {
+      // Submit all evaluations in parallel
+      const results = await Promise.allSettled(
+        submissions.map(async (sub) => {
+          const response = await fetch(`${API_BASE}/evaluate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              repoUrl: sub.repoUrl,
+              deployedUrl: sub.deployedUrl,
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to start evaluation for ${sub.repoUrl}`);
+          }
+          
+          return response.json();
+        })
+      );
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      // Show success message and switch to history view
+      if (successful > 0) {
+        alert(`Started ${successful} evaluation${successful !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : '.'} Check History for progress.`);
+      } else {
+        alert('All submissions failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Batch submission error:', err);
+      alert('Error submitting batch. Please try again.');
+    } finally {
+      setBatchSubmitting(false);
+      setBatchCount(0);
+    }
+  };
 
   return (
     <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern dark:bg-navy-950">
@@ -145,8 +193,43 @@ export default function Home() {
 
                 <TabsContent value="new">
                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    <div className="lg:col-span-3">
-                      <EnhancedSubmissionForm onSubmit={onSubmit} isSubmitting={isSubmitting} />
+                    <div className="lg:col-span-3 space-y-4">
+                      {/* Mode Toggle */}
+                      <div className="flex items-center gap-2 p-1 bg-navy-100 dark:bg-navy-800 rounded-lg w-fit">
+                        <button
+                          type="button"
+                          onClick={() => setSubmissionMode('single')}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                            submissionMode === 'single'
+                              ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+                              : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Single
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSubmissionMode('batch')}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                            submissionMode === 'batch'
+                              ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+                              : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Batch
+                        </button>
+                      </div>
+
+                      {/* Form */}
+                      {submissionMode === 'single' ? (
+                        <EnhancedSubmissionForm onSubmit={onSubmit} isSubmitting={isSubmitting} />
+                      ) : (
+                        <BatchSubmissionForm 
+                          onSubmitBatch={onBatchSubmit} 
+                          isSubmitting={batchSubmitting}
+                          submittingCount={batchCount}
+                        />
+                      )}
                     </div>
                     <div className="lg:col-span-2">
                       <EnhancedHistory apiBase={API_BASE} onSelectEvaluation={handleSelectEvaluation} />

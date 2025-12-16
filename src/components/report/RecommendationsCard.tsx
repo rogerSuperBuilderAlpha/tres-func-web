@@ -34,3 +34,4 @@ export const RecommendationsCard = memo(function RecommendationsCard({ recommend
   );
 });
 
+
