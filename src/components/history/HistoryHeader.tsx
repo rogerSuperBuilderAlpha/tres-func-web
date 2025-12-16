@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { SortField, SortOrder, ViewMode, ScoreFilter, RepoGroup } from './types';
 import { HistoryFilters } from './HistoryFilters';
 import type { EvaluationSummary } from '@/types';
@@ -23,7 +24,7 @@ interface HistoryHeaderProps {
   onSortChange: (field: SortField, order: SortOrder) => void;
 }
 
-export function HistoryHeader({
+export const HistoryHeader = memo(function HistoryHeader({
   viewMode,
   onViewModeChange,
   showStats,
@@ -116,7 +117,7 @@ export function HistoryHeader({
       />
     </div>
   );
-}
+});
 
 
 

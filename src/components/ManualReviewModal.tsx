@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { saveManualReview } from '@/lib/api';
 import { Alert, Spinner, Modal, FormField, TextInput, ClipboardCheckIcon } from '@/components/ui';
 import { ChecklistSection, createInitialChecklist, type ChecklistItem } from './manual-review/ChecklistSection';
@@ -14,7 +14,7 @@ interface ManualReviewModalProps {
   onReviewSaved?: () => void;
 }
 
-export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName, onReviewSaved }: ManualReviewModalProps) {
+export const ManualReviewModal = memo(function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName, onReviewSaved }: ManualReviewModalProps) {
   const [checklist, setChecklist] = useState<ChecklistItem[]>(createInitialChecklist());
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [reviewerName, setReviewerName] = useState('');
@@ -129,4 +129,4 @@ export function ManualReviewModal({ isOpen, onClose, evaluationId, candidateName
       </div>
     </Modal>
   );
-}
+});

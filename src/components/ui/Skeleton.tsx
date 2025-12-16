@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
 interface SkeletonProps {
   className?: string;
@@ -13,7 +13,7 @@ interface SkeletonProps {
 /**
  * Skeleton loading placeholder component
  */
-export function Skeleton({
+export const Skeleton = memo(function Skeleton({
   className = '',
   width,
   height,
@@ -45,7 +45,7 @@ export function Skeleton({
       aria-hidden="true"
     />
   );
-}
+});
 
 // ============================================
 // Preset Skeleton Components
@@ -59,7 +59,7 @@ interface SkeletonTextProps {
 /**
  * Skeleton for text content with multiple lines
  */
-export function SkeletonText({ lines = 3, className = '' }: SkeletonTextProps) {
+export const SkeletonText = memo(function SkeletonText({ lines = 3, className = '' }: SkeletonTextProps) {
   return (
     <div className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -72,19 +72,19 @@ export function SkeletonText({ lines = 3, className = '' }: SkeletonTextProps) {
       ))}
     </div>
   );
-}
+});
 
 /**
  * Skeleton for avatar/profile image
  */
-export function SkeletonAvatar({ size = 40, className = '' }: { size?: number; className?: string }) {
+export const SkeletonAvatar = memo(function SkeletonAvatar({ size = 40, className = '' }: { size?: number; className?: string }) {
   return <Skeleton variant="circular" width={size} height={size} className={className} />;
-}
+});
 
 /**
  * Skeleton for card content
  */
-export function SkeletonCard({ className = '' }: { className?: string }) {
+export const SkeletonCard = memo(function SkeletonCard({ className = '' }: { className?: string }) {
   return (
     <div className={`bg-white dark:bg-navy-800 rounded-xl border border-navy-100 dark:border-navy-700 p-5 ${className}`}>
       <div className="flex items-center gap-3 mb-4">
@@ -101,12 +101,12 @@ export function SkeletonCard({ className = '' }: { className?: string }) {
       </div>
     </div>
   );
-}
+});
 
 /**
  * Skeleton for list items
  */
-export function SkeletonListItem({ className = '' }: { className?: string }) {
+export const SkeletonListItem = memo(function SkeletonListItem({ className = '' }: { className?: string }) {
   return (
     <div className={`flex items-center gap-3 p-3 ${className}`}>
       <Skeleton variant="rounded" width={48} height={48} />
@@ -117,12 +117,12 @@ export function SkeletonListItem({ className = '' }: { className?: string }) {
       <Skeleton variant="rounded" width={60} height={24} />
     </div>
   );
-}
+});
 
 /**
  * Skeleton for table rows
  */
-export function SkeletonTable({ rows = 5, columns = 4, className = '' }: { rows?: number; columns?: number; className?: string }) {
+export const SkeletonTable = memo(function SkeletonTable({ rows = 5, columns = 4, className = '' }: { rows?: number; columns?: number; className?: string }) {
   return (
     <div className={`space-y-2 ${className}`}>
       {/* Header */}
@@ -141,12 +141,12 @@ export function SkeletonTable({ rows = 5, columns = 4, className = '' }: { rows?
       ))}
     </div>
   );
-}
+});
 
 /**
  * Skeleton for form fields
  */
-export function SkeletonForm({ fields = 3, className = '' }: { fields?: number; className?: string }) {
+export const SkeletonForm = memo(function SkeletonForm({ fields = 3, className = '' }: { fields?: number; className?: string }) {
   return (
     <div className={`space-y-4 ${className}`}>
       {Array.from({ length: fields }).map((_, i) => (
@@ -158,7 +158,7 @@ export function SkeletonForm({ fields = 3, className = '' }: { fields?: number; 
       <Skeleton variant="rounded" width="100%" height={48} className="mt-6" />
     </div>
   );
-}
+});
 
 // ============================================
 // Skeleton Wrapper
@@ -173,9 +173,9 @@ interface SkeletonWrapperProps {
 /**
  * Wrapper component that shows skeleton while loading
  */
-export function SkeletonWrapper({ isLoading, skeleton, children }: SkeletonWrapperProps) {
+export const SkeletonWrapper = memo(function SkeletonWrapper({ isLoading, skeleton, children }: SkeletonWrapperProps) {
   if (isLoading) {
     return <>{skeleton}</>;
   }
   return <>{children}</>;
-}
+});

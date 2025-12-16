@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, memo, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode } from 'react';
 import { CheckIcon, ExclamationCircleIcon } from './Icons';
 import { Spinner } from './Spinner';
 
@@ -26,7 +26,7 @@ interface FormFieldProps {
 /**
  * Form field wrapper with label, error, and hint support
  */
-export function FormField({
+export const FormField = memo(function FormField({
   label,
   error,
   hint,
@@ -60,7 +60,7 @@ export function FormField({
       )}
     </div>
   );
-}
+});
 
 // ============================================
 // TextInput
@@ -226,7 +226,7 @@ interface RadioGroupProps {
   orientation?: 'horizontal' | 'vertical';
 }
 
-export function RadioGroup({
+export const RadioGroup = memo(function RadioGroup({
   name,
   options,
   value,
@@ -268,4 +268,4 @@ export function RadioGroup({
       ))}
     </div>
   );
-}
+});

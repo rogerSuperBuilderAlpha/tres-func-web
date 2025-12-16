@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import type { ManualReview } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { Modal, ClipboardListIcon, CheckIcon } from '@/components/ui';
@@ -29,7 +30,7 @@ interface ReviewDetailModalProps {
   onClose: () => void;
 }
 
-export function ReviewDetailModal({ review, onClose }: ReviewDetailModalProps) {
+export const ReviewDetailModal = memo(function ReviewDetailModal({ review, onClose }: ReviewDetailModalProps) {
   return (
     <Modal
       isOpen={true}
@@ -71,7 +72,7 @@ export function ReviewDetailModal({ review, onClose }: ReviewDetailModalProps) {
       </div>
     </Modal>
   );
-}
+});
 
 
 
