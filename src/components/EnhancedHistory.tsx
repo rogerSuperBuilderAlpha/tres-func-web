@@ -4,12 +4,12 @@ import { useState, memo } from 'react';
 import dynamic from 'next/dynamic';
 import { AnalyticsPortal } from './analytics';
 import {
-  EvaluationListItem,
   HistoryEmptyState,
   HistoryErrorState,
   HistoryHeader,
   HistoryLoadingSkeleton,
   RepoGroupItem,
+  VirtualizedList,
   useHistoryData,
 } from './history';
 
@@ -115,15 +115,10 @@ export const EnhancedHistory = memo(function EnhancedHistory({ apiBase, onSelect
             ))}
           </div>
         ) : (
-          <div className="divide-y divide-navy-100 dark:divide-navy-700 max-h-[500px] overflow-y-auto">
-            {sortedFlat.map((evaluation) => (
-              <EvaluationListItem
-                key={evaluation.evaluationId}
-                evaluation={evaluation}
-                onClick={() => onSelectEvaluation(evaluation.evaluationId)}
-              />
-            ))}
-          </div>
+          <VirtualizedList
+            evaluations={sortedFlat}
+            onSelectEvaluation={onSelectEvaluation}
+          />
         )}
       </div>
     </div>
