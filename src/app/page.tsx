@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
 import { BatchSubmissionForm, type BatchSubmissionResult } from '@/components/BatchSubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
-import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
+import { EvaluationReport } from '@/components/EvaluationReport';
 import { EnhancedHistory } from '@/components/EnhancedHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon, CheckCircleIcon, ClipboardCheckIcon } from '@/components/ui';
+import { PageHeader, ErrorBanner, LoadingOverlay } from '@/components/layout';
+import { Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import { useEvaluationPolling } from '@/hooks';
 
@@ -38,7 +38,6 @@ export default function Home() {
     setBatchCount(submissions.length);
     
     try {
-      // Submit all evaluations in parallel
       const results = await Promise.allSettled(
         submissions.map(async (sub) => {
           const response = await fetch(`${API_BASE}/evaluate`, {
@@ -61,7 +60,6 @@ export default function Home() {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
       
-      // Show toast notification
       if (successful > 0) {
         addToast(
           `Started ${successful} evaluation${successful !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : ''}. Check History for progress.`,
@@ -85,85 +83,24 @@ export default function Home() {
   return (
     <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern dark:bg-navy-950">
       {/* Header */}
-      <header className="flex-shrink-0 glass dark:bg-navy-900/90 border-b border-navy-200/50 dark:border-navy-700">
-        <div className="px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-navy-700 to-navy-900 shadow-lg">
-                <CheckCircleIcon className="w-5 h-5 text-gold-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-navy-900 dark:text-white tracking-tight">TTB Evaluator</h1>
-                <p className="text-xs text-navy-500 dark:text-navy-400 hidden sm:block">Automated candidate assessment</p>
-              </div>
-            </div>
-            
-            {/* Header CTAs */}
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              
-              {evaluation?.status === 'COMPLETED' && (
-                <>
-                  {/* Manual Review Button */}
-                  <button
-                    onClick={() => setShowManualReview(true)}
-                    className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gold-500 text-white rounded-lg hover:bg-gold-600 transition text-sm font-medium shadow-md"
-                  >
-                    <ClipboardCheckIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">Manual Review</span>
-                  </button>
-                  
-                  {/* PDF Button */}
-                  <PdfStatusButton
-                    pdfStatus={evaluation.pdfStatus}
-                    pdfUrl={evaluation.pdfUrl}
-                    onRetryPdf={() => handleRetryPdf(evaluation.evaluationId)}
-                  />
-                </>
-              )}
-              
-              {evaluation && (
-                <button
-                  onClick={handleReset}
-                  className="px-3 sm:px-4 py-2 text-sm bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-200 rounded-lg hover:bg-navy-200 dark:hover:bg-navy-700 transition font-medium"
-                >
-                  <span className="hidden sm:inline">← New Evaluation</span>
-                  <span className="sm:hidden">← New</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        evaluation={evaluation}
+        onShowManualReview={() => setShowManualReview(true)}
+        onRetryPdf={handleRetryPdf}
+        onReset={handleReset}
+      />
 
       {/* Error banner */}
       {error && (
-        <div className="flex-shrink-0 bg-danger-50 dark:bg-danger-900/30 border-b border-danger-200 dark:border-danger-800 px-4 sm:px-6 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center min-w-0">
-              <svg className="w-5 h-5 text-danger-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-danger-700 dark:text-danger-400 text-sm truncate">{error}</span>
-            </div>
-            {evaluation?.status === 'FAILED' && (
-              <button onClick={handleReset} className="px-3 py-1 text-sm bg-danger-600 text-white rounded hover:bg-danger-500 transition flex-shrink-0">
-                Try Again
-              </button>
-            )}
-          </div>
-        </div>
+        <ErrorBanner
+          error={error}
+          showRetry={evaluation?.status === 'FAILED'}
+          onRetry={handleReset}
+        />
       )}
 
-      {/* Loading overlay for history selection */}
-      {isLoadingHistory && (
-        <div className="fixed inset-0 z-40 bg-navy-950/30 backdrop-blur-sm flex items-center justify-center">
-          <div className="glass dark:bg-navy-800 rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
-            <Spinner size="lg" className="text-gold-500" />
-            <p className="text-navy-700 dark:text-navy-200 font-medium">Loading evaluation...</p>
-          </div>
-        </div>
-      )}
+      {/* Loading overlay */}
+      {isLoadingHistory && <LoadingOverlay message="Loading evaluation..." />}
 
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
@@ -184,30 +121,10 @@ export default function Home() {
                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     <div className="lg:col-span-3 space-y-4">
                       {/* Mode Toggle */}
-                      <div className="flex items-center gap-2 p-1 bg-navy-100 dark:bg-navy-800 rounded-lg w-fit">
-                        <button
-                          type="button"
-                          onClick={() => setSubmissionMode('single')}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-                            submissionMode === 'single'
-                              ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
-                              : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
-                          }`}
-                        >
-                          Single
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSubmissionMode('batch')}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-                            submissionMode === 'batch'
-                              ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
-                              : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
-                          }`}
-                        >
-                          Batch
-                        </button>
-                      </div>
+                      <SubmissionModeToggle 
+                        mode={submissionMode} 
+                        onModeChange={setSubmissionMode} 
+                      />
 
                       {/* Form */}
                       {submissionMode === 'single' ? (
@@ -257,12 +174,45 @@ export default function Home() {
           isOpen={showManualReview}
           onClose={() => setShowManualReview(false)}
           evaluationId={evaluation.evaluationId}
-          onReviewSaved={() => {
-            // Refresh evaluation data to show the new manual review
-            handleSelectEvaluation(evaluation.evaluationId);
-          }}
+          onReviewSaved={() => handleSelectEvaluation(evaluation.evaluationId)}
         />
       )}
     </main>
+  );
+}
+
+// Submission Mode Toggle Component
+function SubmissionModeToggle({ 
+  mode, 
+  onModeChange 
+}: { 
+  mode: 'single' | 'batch'; 
+  onModeChange: (mode: 'single' | 'batch') => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 p-1 bg-navy-100 dark:bg-navy-800 rounded-lg w-fit">
+      <button
+        type="button"
+        onClick={() => onModeChange('single')}
+        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+          mode === 'single'
+            ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+            : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
+        }`}
+      >
+        Single
+      </button>
+      <button
+        type="button"
+        onClick={() => onModeChange('batch')}
+        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+          mode === 'batch'
+            ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
+            : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
+        }`}
+      >
+        Batch
+      </button>
+    </div>
   );
 }
