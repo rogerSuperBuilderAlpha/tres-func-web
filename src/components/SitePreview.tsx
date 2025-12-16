@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from 'react';
 import { SiteMetadata } from '@/lib/validators';
-import { Badge } from '@/components/ui';
+import { Badge, CheckIcon, XIcon, LockClosedIcon, LockOpenIcon, BoltIcon } from '@/components/ui';
 
 interface SitePreviewProps {
   url: string;
@@ -33,13 +33,9 @@ export const SitePreview = memo(function SitePreview({ url, metadata }: SitePrev
           metadata.accessible ? 'bg-success-100' : 'bg-danger-100'
         }`}>
           {metadata.accessible ? (
-            <svg className="w-5 h-5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckIcon className="w-5 h-5 text-success-600" />
           ) : (
-            <svg className="w-5 h-5 text-danger-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="w-5 h-5 text-danger-600" />
           )}
         </div>
         
@@ -67,13 +63,9 @@ export const SitePreview = memo(function SitePreview({ url, metadata }: SitePrev
             {/* SSL indicator */}
             <span className={`flex items-center gap-1 ${metadata.ssl ? 'text-success-600' : 'text-warning-600'}`}>
               {metadata.ssl ? (
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
+                <LockClosedIcon className="w-3.5 h-3.5" />
               ) : (
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
-                </svg>
+                <LockOpenIcon className="w-3.5 h-3.5" />
               )}
               {metadata.ssl ? 'HTTPS' : 'HTTP'}
             </span>
@@ -81,9 +73,7 @@ export const SitePreview = memo(function SitePreview({ url, metadata }: SitePrev
             {/* Response time */}
             {metadata.responseTime && (
               <span className="flex items-center gap-1">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <BoltIcon className="w-3.5 h-3.5" />
                 {metadata.responseTime}ms
               </span>
             )}
