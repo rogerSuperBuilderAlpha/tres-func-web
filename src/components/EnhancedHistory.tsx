@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { EvaluationSummary, CostAggregation } from '@/types';
+import { useState } from 'react';
 import { DashboardStats } from './DashboardStats';
 import { AnalyticsPortal } from './analytics';
 import {
@@ -11,14 +10,7 @@ import {
   HistoryHeader,
   HistoryLoadingSkeleton,
   RepoGroupItem,
-  compareEvaluations,
-  compareRepoGroups,
-  filterEvaluations,
-  groupEvaluationsByRepo,
-  type ScoreFilter,
-  type SortField,
-  type SortOrder,
-  type ViewMode,
+  useHistoryData,
 } from './history';
 
 interface EnhancedHistoryProps {
@@ -28,67 +20,31 @@ interface EnhancedHistoryProps {
 }
 
 export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showStatsProp = true }: EnhancedHistoryProps) {
-  const [evaluations, setEvaluations] = useState<EvaluationSummary[]>([]);
-  const [costAggregation, setCostAggregation] = useState<CostAggregation | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Search and filter state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all');
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showStats, setShowStats] = useState(showStatsProp);
-  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
-  const [expandedRepos, setExpandedRepos] = useState<Set<string>>(new Set());
   const [showAnalytics, setShowAnalytics] = useState(false);
 
-  const fetchEvaluations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`${apiBase}/evaluations?limit=50`);
-      if (!response.ok) throw new Error('Failed to fetch evaluations');
-      const data = await response.json();
-      setEvaluations(data.evaluations || []);
-      setCostAggregation(data.costAggregation);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load history');
-    } finally {
-      setLoading(false);
-    }
-  }, [apiBase]);
-
-  useEffect(() => {
-    fetchEvaluations();
-  }, [fetchEvaluations]);
-
-  // Filter evaluations
-  const filteredEvaluations = useMemo(() => {
-    return filterEvaluations(evaluations, searchQuery, scoreFilter);
-  }, [evaluations, searchQuery, scoreFilter]);
-
-  // Group evaluations by repo
-  const groupedByRepo = useMemo(() => {
-    const groups = groupEvaluationsByRepo(filteredEvaluations);
-    return [...groups].sort(compareRepoGroups(sortField, sortOrder));
-  }, [filteredEvaluations, sortField, sortOrder]);
-
-  // Flat sorted list
-  const sortedFlat = useMemo(() => {
-    let result = [...filteredEvaluations];
-    result.sort(compareEvaluations(sortField, sortOrder));
-    return result;
-  }, [filteredEvaluations, sortField, sortOrder]);
-
-  const toggleRepoExpanded = useCallback((repoUrl: string) => {
-    setExpandedRepos(prev => {
-      const next = new Set(prev);
-      if (next.has(repoUrl)) next.delete(repoUrl);
-      else next.add(repoUrl);
-      return next;
-    });
-  }, []);
+  const {
+    evaluations,
+    costAggregation,
+    loading,
+    error,
+    filteredEvaluations,
+    groupedByRepo,
+    sortedFlat,
+    searchQuery,
+    setSearchQuery,
+    scoreFilter,
+    setScoreFilter,
+    sortField,
+    sortOrder,
+    setSortField,
+    setSortOrder,
+    viewMode,
+    setViewMode,
+    expandedRepos,
+    toggleRepoExpanded,
+    fetchEvaluations,
+  } = useHistoryData({ apiBase });
 
   if (loading) {
     return <HistoryLoadingSkeleton />;

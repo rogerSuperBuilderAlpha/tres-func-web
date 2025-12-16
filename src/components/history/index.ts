@@ -9,6 +9,9 @@ export { HistoryLoadingSkeleton } from './HistoryLoadingSkeleton';
 export { HistoryErrorState } from './HistoryErrorState';
 export { HistoryEmptyState } from './HistoryEmptyState';
 
+// Hooks
+export { useHistoryData } from './hooks';
+
 
 
 
