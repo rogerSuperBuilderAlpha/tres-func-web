@@ -1,7 +1,8 @@
 'use client';
 
+import { memo } from 'react';
 import { getPerformanceTier, formatDate } from '@/lib/utils';
-import { Badge } from '@/components/ui';
+import { Badge, ChevronRightIcon } from '@/components/ui';
 import type { RepoGroup } from './types';
 
 interface RepoGroupItemProps {
@@ -11,7 +12,7 @@ interface RepoGroupItemProps {
   onSelectEvaluation: (evaluationId: string) => void;
 }
 
-export function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation }: RepoGroupItemProps) {
+export const RepoGroupItem = memo(function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation }: RepoGroupItemProps) {
   const latestTier = getPerformanceTier(group.latestScore);
   const bestTier = getPerformanceTier(group.bestScore);
 
@@ -25,12 +26,9 @@ export function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button className="p-1 hover:bg-navy-100 dark:hover:bg-navy-700 rounded transition flex-shrink-0">
-              <svg 
+              <ChevronRightIcon 
                 className={`w-4 h-4 text-navy-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              />
             </button>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
@@ -100,9 +98,7 @@ export function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation 
                     <span className="text-xs text-navy-400 dark:text-navy-500">
                       {formatDate(evaluation.evaluatedAt)}
                     </span>
-                    <svg className="w-4 h-4 text-navy-300 dark:text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <ChevronRightIcon className="w-4 h-4 text-navy-300 dark:text-navy-600" />
                   </div>
                 </div>
               </div>
@@ -112,7 +108,7 @@ export function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation 
       )}
     </div>
   );
-}
+});
 
 
 

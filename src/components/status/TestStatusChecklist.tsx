@@ -1,7 +1,9 @@
 'use client';
 
+import { memo } from 'react';
 import type { TestProgress, TestStageStatus } from '@/types';
 import { TEST_STATUS_CONFIG } from './config';
+import { CheckIcon, XIcon, ExclamationIcon } from '@/components/ui';
 
 interface TestStatusChecklistProps {
   progress?: TestProgress;
@@ -9,7 +11,7 @@ interface TestStatusChecklistProps {
   runningTests: Array<keyof TestProgress>;
 }
 
-export function TestStatusChecklist({ progress, isStuck, runningTests }: TestStatusChecklistProps) {
+export const TestStatusChecklist = memo(function TestStatusChecklist({ progress, isStuck, runningTests }: TestStatusChecklistProps) {
   return (
     <div className="lg:col-span-4 p-5 bg-navy-50/30 dark:bg-navy-800/30 min-h-[400px]">
       <h3 className="text-xs uppercase tracking-wide text-navy-500 dark:text-navy-400 mb-3">Test Status</h3>
@@ -25,9 +27,9 @@ export function TestStatusChecklist({ progress, isStuck, runningTests }: TestSta
       </p>
     </div>
   );
-}
+});
 
-function StatusItem({ label, status, isStuck }: { label: string; status: TestStageStatus; isStuck?: boolean }) {
+const StatusItem = memo(function StatusItem({ label, status, isStuck }: { label: string; status: TestStageStatus; isStuck?: boolean }) {
   const showWarning = isStuck && status === 'running';
 
   return (
@@ -45,23 +47,17 @@ function StatusItem({ label, status, isStuck }: { label: string; status: TestSta
         )}
         {status === 'complete' && (
           <div className="w-4 h-4 rounded-full bg-success-500 flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckIcon className="w-2.5 h-2.5 text-white" />
           </div>
         )}
         {status === 'warning' && (
           <div className="w-4 h-4 rounded-full bg-warning-500 flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01" />
-            </svg>
+            <ExclamationIcon className="w-2.5 h-2.5 text-white" />
           </div>
         )}
         {status === 'failed' && (
           <div className="w-4 h-4 rounded-full bg-danger-500 flex items-center justify-center">
-            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon className="w-2.5 h-2.5 text-white" />
           </div>
         )}
       </div>
@@ -93,8 +89,4 @@ function StatusItem({ label, status, isStuck }: { label: string; status: TestSta
       )}
     </div>
   );
-}
-
-
-
-
+});
