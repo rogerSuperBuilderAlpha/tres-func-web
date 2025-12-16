@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import type { ManualReview } from '@/types';
+import { ChevronRightIcon } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 
 // Checklist label mapping
@@ -48,12 +49,8 @@ export const ReviewCard = memo(function ReviewCard({ review, onClick }: ReviewCa
             </span>
           )}
         </div>
-        <svg className="w-4 h-4 text-navy-300 group-hover:text-gold-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRightIcon className="w-4 h-4 text-navy-300 group-hover:text-gold-500 transition" />
       </div>
     </button>
   );
 });
-
-

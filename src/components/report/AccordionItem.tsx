@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
+import { ChevronDownIcon } from '@/components/ui';
 
 interface AccordionItemProps {
   title: string;
@@ -10,7 +11,7 @@ interface AccordionItemProps {
   defaultOpen?: boolean;
 }
 
-export function AccordionItem({ 
+export const AccordionItem = memo(function AccordionItem({ 
   title, 
   count,
   countColor = 'bg-navy-100 text-navy-600',
@@ -33,12 +34,9 @@ export function AccordionItem({
             </span>
           )}
         </div>
-        <svg 
+        <ChevronDownIcon 
           className={`w-5 h-5 text-navy-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        />
       </button>
       {isOpen && (
         <div className="pb-4">
@@ -47,10 +45,4 @@ export function AccordionItem({
       )}
     </div>
   );
-}
-
-
-
-
-
-
+});

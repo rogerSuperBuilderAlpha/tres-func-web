@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import type { ManualReview } from '@/types';
+import { ClipboardCheckIcon } from '@/components/ui';
 import { ReviewCard } from './ReviewCard';
 
 interface ManualReviewsSectionProps {
@@ -17,14 +18,7 @@ export const ManualReviewsSection = memo(function ManualReviewsSection({ reviews
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-navy-900 flex items-center gap-2">
           <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-              />
-            </svg>
+            <ClipboardCheckIcon className="w-4 h-4 text-white" />
           </span>
           Manual Reviews
         </h2>
@@ -42,5 +36,3 @@ export const ManualReviewsSection = memo(function ManualReviewsSection({ reviews
     </div>
   );
 });
-
-

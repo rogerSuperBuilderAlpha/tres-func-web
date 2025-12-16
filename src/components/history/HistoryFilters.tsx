@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+import { SearchIcon } from '@/components/ui';
 import type { SortField, SortOrder, ScoreFilter } from './types';
 
 interface HistoryFiltersProps {
@@ -12,7 +14,7 @@ interface HistoryFiltersProps {
   onSortChange: (field: SortField, order: SortOrder) => void;
 }
 
-export function HistoryFilters({
+export const HistoryFilters = memo(function HistoryFilters({
   searchQuery,
   onSearchChange,
   scoreFilter,
@@ -25,9 +27,7 @@ export function HistoryFilters({
     <div className="space-y-3">
       {/* Search */}
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" />
         <input
           type="text"
           value={searchQuery}
@@ -75,10 +75,4 @@ export function HistoryFilters({
       </div>
     </div>
   );
-}
-
-
-
-
-
-
+});
