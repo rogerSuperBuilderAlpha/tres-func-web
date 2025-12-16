@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { Badge } from '@/components/ui';
+import { Badge, DocumentIcon, CheckCircleSolidIcon } from '@/components/ui';
 
 interface PreflightSummaryProps {
   repoValid: boolean;
@@ -29,9 +29,7 @@ export const PreflightSummary = memo(function PreflightSummary({ repoValid, site
     <div className="bg-gradient-to-br from-navy-800 to-navy-900 rounded-xl p-5 text-white">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold flex items-center gap-2">
-          <svg className="w-5 h-5 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
+          <DocumentIcon className="w-5 h-5 text-gold-400" />
           Pre-flight Summary
         </h3>
         <Badge variant={checksPass ? 'success' : 'warning'} size="sm">
@@ -43,9 +41,7 @@ export const PreflightSummary = memo(function PreflightSummary({ repoValid, site
       <div className="grid grid-cols-2 gap-2 mb-4">
         <div className={`flex items-center gap-2 p-2 rounded-lg ${repoValid ? 'bg-success-600/20' : 'bg-navy-700/50'}`}>
           {repoValid ? (
-            <svg className="w-4 h-4 text-success-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+            <CheckCircleSolidIcon className="w-4 h-4 text-success-400" />
           ) : (
             <div className="w-4 h-4 border-2 border-navy-500 rounded-full"></div>
           )}
@@ -53,9 +49,7 @@ export const PreflightSummary = memo(function PreflightSummary({ repoValid, site
         </div>
         <div className={`flex items-center gap-2 p-2 rounded-lg ${siteValid ? 'bg-success-600/20' : 'bg-navy-700/50'}`}>
           {siteValid ? (
-            <svg className="w-4 h-4 text-success-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+            <CheckCircleSolidIcon className="w-4 h-4 text-success-400" />
           ) : (
             <div className="w-4 h-4 border-2 border-navy-500 rounded-full"></div>
           )}

@@ -1,6 +1,7 @@
 'use client';
 
-import { Spinner } from '@/components/ui';
+import { memo } from 'react';
+import { Spinner, CheckCircleSolidIcon, ErrorCircleSolidIcon } from '@/components/ui';
 
 export interface ValidationState {
   checking: boolean;
@@ -19,7 +20,7 @@ interface ValidatedUrlInputProps {
   optional?: boolean;
 }
 
-export function ValidatedUrlInput({
+export const ValidatedUrlInput = memo(function ValidatedUrlInput({
   id,
   label,
   required,
@@ -58,39 +59,21 @@ export function ValidatedUrlInput({
           {validation.checking ? (
             <Spinner size="sm" className="text-navy-400" />
           ) : validation.valid && value ? (
-            <svg className="w-5 h-5 text-success-500" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <CheckCircleSolidIcon className="w-5 h-5 text-success-500" />
           ) : validation.error && value ? (
-            <svg className="w-5 h-5 text-danger-500" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <ErrorCircleSolidIcon className="w-5 h-5 text-danger-500" />
           ) : null}
         </div>
       </div>
       {validation.error && value && (
         <p className="mt-1.5 text-xs text-danger-600 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <ErrorCircleSolidIcon className="w-3 h-3" />
           {validation.error}
         </p>
       )}
     </div>
   );
-}
+});
 
 
 
