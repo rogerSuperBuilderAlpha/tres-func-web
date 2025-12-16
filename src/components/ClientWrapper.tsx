@@ -1,7 +1,7 @@
 'use client';
 
 import { PasswordGate } from './PasswordGate';
-import { ToastProvider } from '@/components/ui';
+import { ToastProvider, ErrorBoundary } from '@/components/ui';
 
 interface ClientWrapperProps {
   children: React.ReactNode;
@@ -9,9 +9,11 @@ interface ClientWrapperProps {
 
 export function ClientWrapper({ children }: ClientWrapperProps) {
   return (
-    <ToastProvider>
-      <PasswordGate>{children}</PasswordGate>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <PasswordGate>{children}</PasswordGate>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 
