@@ -3,6 +3,17 @@
 import { useMemo, useState, useEffect, useCallback, memo } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import { API_BASE } from '@/lib/api';
+import { 
+  Modal, 
+  Spinner,
+  ChartBarIcon, 
+  XIcon, 
+  PieChartIcon, 
+  WarningIcon, 
+  CurrencyDollarIcon, 
+  TrendingUpIcon, 
+  BadgeCheckIcon 
+} from '@/components/ui';
 
 type DateRange = 'last7' | 'last30' | 'last90' | 'thisYear' | 'allTime' | 'custom';
 
@@ -221,110 +232,88 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-6xl max-h-[90vh] m-4 bg-white dark:bg-navy-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex-shrink-0 border-b border-navy-100 dark:border-navy-700 bg-gradient-to-r from-navy-50 to-white dark:from-navy-800 dark:to-navy-900">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 shadow-lg">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-navy-900 dark:text-white">Analytics Dashboard</h2>
-                <p className="text-sm text-navy-500 dark:text-navy-400">
-                  {loading ? 'Loading...' : dataInfo || 'Comprehensive evaluation insights'}
-                </p>
-              </div>
-            </div>
+  const headerContent = (
+    <>
+      {/* Date Range Selector */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-navy-600 dark:text-navy-400">Time Range:</span>
+        <div className="flex flex-wrap gap-1">
+          {[
+            { value: 'last7', label: '7 Days' },
+            { value: 'last30', label: '30 Days' },
+            { value: 'last90', label: '90 Days' },
+            { value: 'thisYear', label: 'This Year' },
+            { value: 'allTime', label: 'All Time' },
+            { value: 'custom', label: 'Custom' },
+          ].map((option) => (
             <button
-              onClick={onClose}
-              className="p-2 text-navy-400 hover:text-navy-600 dark:hover:text-navy-200 hover:bg-navy-100 dark:hover:bg-navy-800 rounded-lg transition"
+              key={option.value}
+              onClick={() => setDateRange(option.value as DateRange)}
+              disabled={loading}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+                dateRange === option.value
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300 hover:bg-navy-200 dark:hover:bg-navy-600'
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              {option.label}
             </button>
-          </div>
-
-          {/* Date Range Selector */}
-          <div className="px-6 pb-4 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-navy-600 dark:text-navy-400">Time Range:</span>
-            <div className="flex flex-wrap gap-1">
-              {[
-                { value: 'last7', label: '7 Days' },
-                { value: 'last30', label: '30 Days' },
-                { value: 'last90', label: '90 Days' },
-                { value: 'thisYear', label: 'This Year' },
-                { value: 'allTime', label: 'All Time' },
-                { value: 'custom', label: 'Custom' },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setDateRange(option.value as DateRange)}
-                  disabled={loading}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
-                    dateRange === option.value
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300 hover:bg-navy-200 dark:hover:bg-navy-600'
-                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Date Inputs */}
-            {dateRange === 'custom' && (
-              <div className="flex items-center gap-2 ml-2">
-                <input
-                  type="date"
-                  value={customFromDate}
-                  onChange={(e) => setCustomFromDate(e.target.value)}
-                  className="px-2 py-1 text-xs rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
-                />
-                <span className="text-navy-400">to</span>
-                <input
-                  type="date"
-                  value={customToDate}
-                  onChange={(e) => setCustomToDate(e.target.value)}
-                  className="px-2 py-1 text-xs rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
-                />
-                <button
-                  onClick={fetchData}
-                  disabled={loading || (!customFromDate && !customToDate)}
-                  className="px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Apply
-                </button>
-              </div>
-            )}
-
-            {loading && (
-              <div className="ml-2">
-                <svg className="animate-spin h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-              </div>
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {!analytics ? (
-            <div className="flex flex-col items-center justify-center py-16 text-navy-400">
-              <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <p className="text-lg font-medium">No data yet</p>
-              <p className="text-sm">Run some evaluations to see analytics</p>
-            </div>
-          ) : (
+        {/* Custom Date Inputs */}
+        {dateRange === 'custom' && (
+          <div className="flex items-center gap-2 ml-2">
+            <input
+              type="date"
+              value={customFromDate}
+              onChange={(e) => setCustomFromDate(e.target.value)}
+              className="px-2 py-1 text-xs rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
+            />
+            <span className="text-navy-400">to</span>
+            <input
+              type="date"
+              value={customToDate}
+              onChange={(e) => setCustomToDate(e.target.value)}
+              className="px-2 py-1 text-xs rounded-lg border border-navy-200 dark:border-navy-600 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
+            />
+            <button
+              onClick={fetchData}
+              disabled={loading || (!customFromDate && !customToDate)}
+              className="px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              Apply
+            </button>
+          </div>
+        )}
+
+        {loading && <Spinner size="sm" className="ml-2 text-purple-600" />}
+      </div>
+    </>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Analytics Dashboard"
+      subtitle={loading ? 'Loading...' : dataInfo || 'Comprehensive evaluation insights'}
+      icon={<ChartBarIcon className="w-5 h-5 text-white" />}
+      size="xl"
+    >
+      {/* Date Range Header */}
+      <div className="mb-6 pb-4 border-b border-navy-100 dark:border-navy-700">
+        {headerContent}
+      </div>
+
+      {/* Content */}
+      {!analytics ? (
+        <div className="flex flex-col items-center justify-center py-16 text-navy-400">
+          <ChartBarIcon className="w-16 h-16 mb-4" />
+          <p className="text-lg font-medium">No data yet</p>
+          <p className="text-sm">Run some evaluations to see analytics</p>
+        </div>
+      ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Overview Cards */}
               <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -339,9 +328,7 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
               {/* Score Distribution */}
               <div className="bg-navy-50 dark:bg-navy-800/50 rounded-xl p-5">
                 <h3 className="font-semibold text-navy-900 dark:text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gold-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                  </svg>
+                  <PieChartIcon className="w-5 h-5 text-gold-500" />
                   Score Distribution
                 </h3>
                 <div className="space-y-3">
@@ -387,9 +374,7 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
               {/* Critical Issues */}
               <div className="bg-navy-50 dark:bg-navy-800/50 rounded-xl p-5">
                 <h3 className="font-semibold text-navy-900 dark:text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-danger-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+                  <WarningIcon className="w-5 h-5 text-danger-500" />
                   Critical Issues
                 </h3>
                 <div className="space-y-4">
@@ -426,9 +411,7 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
               {/* Cost Analysis */}
               <div className="bg-navy-50 dark:bg-navy-800/50 rounded-xl p-5">
                 <h3 className="font-semibold text-navy-900 dark:text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <CurrencyDollarIcon className="w-5 h-5 text-purple-500" />
                   LLM Costs
                 </h3>
                 {costAggregation ? (
@@ -449,9 +432,7 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
               {/* 7-Day Trend */}
               <div className="lg:col-span-2 bg-navy-50 dark:bg-navy-800/50 rounded-xl p-5">
                 <h3 className="font-semibold text-navy-900 dark:text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-navy-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                  </svg>
+                  <TrendingUpIcon className="w-5 h-5 text-navy-500" />
                   7-Day Activity
                 </h3>
                 <div className="grid grid-cols-7 gap-2">
@@ -480,9 +461,7 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
               {/* Top Strengths */}
               <div className="bg-navy-50 dark:bg-navy-800/50 rounded-xl p-5">
                 <h3 className="font-semibold text-navy-900 dark:text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
+                  <BadgeCheckIcon className="w-5 h-5 text-success-500" />
                   Common Strengths
                 </h3>
                 <div className="space-y-2">
@@ -502,9 +481,7 @@ export function AnalyticsPortal({ isOpen, onClose, evaluations: initialEvaluatio
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
