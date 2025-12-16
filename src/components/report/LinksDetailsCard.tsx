@@ -3,6 +3,7 @@
 import { memo, useMemo } from 'react';
 import type { EvaluationReportData } from '@/types';
 import { formatDeployedDisplayUrl, formatRepoDisplayUrl } from './utils';
+import { LinkIcon } from '@/components/ui';
 
 interface LinksDetailsCardProps {
   report: EvaluationReportData;
@@ -18,14 +19,7 @@ export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: Links
     <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
       <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
         <span className="w-6 h-6 rounded-full bg-navy-100 flex items-center justify-center">
-          <svg className="w-3.5 h-3.5 text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-            />
-          </svg>
+          <LinkIcon className="w-3.5 h-3.5 text-navy-600" />
         </span>
         Links & Details
       </h3>
