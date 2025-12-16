@@ -28,7 +28,7 @@ export default function Home() {
   ] = useEvaluationPolling({ apiBase: API_BASE });
 
   // Batch mutation hook
-  const { isLoading: batchSubmitting, mutateAll } = useBatchMutation<
+  const { isLoading: batchSubmitting, pendingCount: batchCount, mutateAll } = useBatchMutation<
     { repoUrl: string; deployedUrl: string },
     { evaluationId: string }
   >('/evaluate');
@@ -114,6 +114,7 @@ export default function Home() {
                         <BatchSubmissionForm 
                           onSubmitBatch={onBatchSubmit} 
                           isSubmitting={batchSubmitting}
+                          submittingCount={batchCount}
                         />
                       )}
                     </div>

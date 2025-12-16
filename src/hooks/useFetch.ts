@@ -144,13 +144,16 @@ export function useBatchMutation<TInput, TOutput = unknown>(
 ): {
   results: Array<{ status: 'fulfilled' | 'rejected'; value?: TOutput; reason?: string }>;
   isLoading: boolean;
+  pendingCount: number;
   mutateAll: (inputs: TInput[]) => Promise<{ successful: number; failed: number }>;
 } {
   const [results, setResults] = useState<Array<{ status: 'fulfilled' | 'rejected'; value?: TOutput; reason?: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const mutateAll = useCallback(async (inputs: TInput[]): Promise<{ successful: number; failed: number }> => {
     setIsLoading(true);
+    setPendingCount(inputs.length);
     setResults([]);
 
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
@@ -181,6 +184,7 @@ export function useBatchMutation<TInput, TOutput = unknown>(
 
     setResults(formattedResults);
     setIsLoading(false);
+    setPendingCount(0);
 
     const successful = formattedResults.filter(r => r.status === 'fulfilled').length;
     const failed = formattedResults.filter(r => r.status === 'rejected').length;
@@ -188,5 +192,5 @@ export function useBatchMutation<TInput, TOutput = unknown>(
     return { successful, failed };
   }, [endpoint]);
 
-  return { results, isLoading, mutateAll };
+  return { results, isLoading, pendingCount, mutateAll };
 }

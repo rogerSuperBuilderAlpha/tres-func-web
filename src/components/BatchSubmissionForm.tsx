@@ -17,6 +17,7 @@ interface BatchSubmissionFormProps {
   onSubmitBatch: (submissions: Array<{ repoUrl: string; deployedUrl: string }>) => Promise<BatchSubmissionResult>;
   isSubmitting: boolean;
   submittingCount?: number;
+  onSuccess?: () => void;
 }
 
 function createEmptyEntry(id: string): SubmissionEntry {
@@ -31,19 +32,21 @@ function createEmptyEntry(id: string): SubmissionEntry {
   };
 }
 
-export const BatchSubmissionForm = memo(function BatchSubmissionForm({ onSubmitBatch, isSubmitting, submittingCount = 0 }: BatchSubmissionFormProps) {
+export const BatchSubmissionForm = memo(function BatchSubmissionForm({ onSubmitBatch, isSubmitting, submittingCount = 0, onSuccess }: BatchSubmissionFormProps) {
   const baseId = useId();
   const [entries, setEntries] = useState<SubmissionEntry[]>([
     createEmptyEntry(`${baseId}-0`),
   ]);
+  const [entryCounter, setEntryCounter] = useState(1);
 
   const updateEntry = useCallback((id: string, updates: Partial<SubmissionEntry>) => {
     setEntries(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
   }, []);
 
   const addEntry = useCallback(() => {
-    setEntries(prev => [...prev, createEmptyEntry(`${baseId}-${prev.length}`)]);
-  }, [baseId]);
+    setEntries(prev => [...prev, createEmptyEntry(`${baseId}-${entryCounter}`)]);
+    setEntryCounter(prev => prev + 1);
+  }, [baseId, entryCounter]);
 
   const removeEntry = useCallback((id: string) => {
     setEntries(prev => prev.filter(e => e.id !== id));
@@ -52,13 +55,24 @@ export const BatchSubmissionForm = memo(function BatchSubmissionForm({ onSubmitB
   const validEntries = entries.filter(e => e.repoValidation.valid && e.siteValidation.valid);
   const canSubmit = validEntries.length > 0 && !isSubmitting;
 
+  const resetForm = useCallback(() => {
+    setEntries([createEmptyEntry(`${baseId}-${entryCounter}`)]);
+    setEntryCounter(prev => prev + 1);
+  }, [baseId, entryCounter]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (canSubmit) {
-      await onSubmitBatch(validEntries.map(entry => ({
+      const result = await onSubmitBatch(validEntries.map(entry => ({
         repoUrl: entry.repoUrl,
         deployedUrl: entry.deployedUrl,
       })));
+      
+      // Reset form if any submissions were successful
+      if (result.successful > 0) {
+        resetForm();
+        onSuccess?.();
+      }
     }
   };
 
