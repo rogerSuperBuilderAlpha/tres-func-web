@@ -4,6 +4,7 @@ import { memo } from 'react';
 import type { EvaluationSummary } from '@/types';
 import { getPerformanceTier, formatDate, extractRepoName } from '@/lib/utils';
 import { Badge, ChevronRightIcon, ExclamationTriangleIcon } from '@/components/ui';
+import { usePrefetch } from '@/hooks';
 
 interface EvaluationListItemProps {
   evaluation: EvaluationSummary;
@@ -13,11 +14,13 @@ interface EvaluationListItemProps {
 export const EvaluationListItem = memo(function EvaluationListItem({ evaluation, onClick }: EvaluationListItemProps) {
   const score = evaluation.rubricScore ?? evaluation.overallScore ?? 0;
   const tier = getPerformanceTier(score);
+  const { prefetchEvaluation } = usePrefetch();
 
   return (
     <div
       className="px-4 py-3 hover:bg-navy-50/50 dark:hover:bg-navy-800/50 cursor-pointer transition group"
       onClick={onClick}
+      onMouseEnter={() => prefetchEvaluation(evaluation.evaluationId)}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">

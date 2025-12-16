@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import { getPerformanceTier, formatDate } from '@/lib/utils';
 import { Badge, ChevronRightIcon } from '@/components/ui';
+import { usePrefetch } from '@/hooks';
 import type { RepoGroup } from './types';
 
 interface RepoGroupItemProps {
@@ -15,6 +16,7 @@ interface RepoGroupItemProps {
 export const RepoGroupItem = memo(function RepoGroupItem({ group, isExpanded, onToggle, onSelectEvaluation }: RepoGroupItemProps) {
   const latestTier = getPerformanceTier(group.latestScore);
   const bestTier = getPerformanceTier(group.bestScore);
+  const { prefetchEvaluation } = usePrefetch();
 
   return (
     <div className="bg-white dark:bg-navy-900">
@@ -79,6 +81,7 @@ export const RepoGroupItem = memo(function RepoGroupItem({ group, isExpanded, on
                   e.stopPropagation();
                   onSelectEvaluation(evaluation.evaluationId);
                 }}
+                onMouseEnter={() => prefetchEvaluation(evaluation.evaluationId)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
