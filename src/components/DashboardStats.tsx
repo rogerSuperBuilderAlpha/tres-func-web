@@ -3,7 +3,7 @@
 import { useMemo, memo } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import { StatCard, CostsSummary, ScoreDistribution, calculateStats } from './stats';
-import { ChartBarIcon, DocumentIcon, PieChartFullIcon, BadgeCheckIcon, WarningIcon } from '@/components/ui';
+import { ChartBarIcon, DocumentIcon, PieChartFullIcon, BadgeCheckIcon, WarningIcon, GlassCard } from '@/components/ui';
 
 interface DashboardStatsProps {
   evaluations: EvaluationSummary[];
@@ -15,7 +15,7 @@ export const DashboardStats = memo(function DashboardStats({ evaluations, costAg
   const stats = useMemo(() => calculateStats(evaluations), [evaluations]);
 
   return (
-    <div className="glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 p-5">
+    <GlassCard padding="md">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -77,6 +77,6 @@ export const DashboardStats = memo(function DashboardStats({ evaluations, costAg
         needsWork={stats.needsWork}
         total={stats.total}
       />
-    </div>
+    </GlassCard>
   );
 });

@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 interface CardProps {
   children: React.ReactNode;
   className?: string;
@@ -14,7 +16,7 @@ const paddingClasses = {
   lg: 'p-6',
 };
 
-export function Card({ 
+export const Card = memo(function Card({ 
   children, 
   className = '', 
   variant = 'default',
@@ -30,19 +32,26 @@ export function Card({
       {children}
     </div>
   );
+});
+
+interface GlassCardProps {
+  children: React.ReactNode;
+  className?: string;
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export function GlassCard({ 
+/** Glass card with dark mode support - use for main content panels */
+export const GlassCard = memo(function GlassCard({ 
   children, 
   className = '',
   padding = 'lg'
-}: Omit<CardProps, 'variant'>) {
+}: GlassCardProps) {
   return (
-    <div className={`glass rounded-2xl shadow-xl border border-navy-100 ${paddingClasses[padding]} ${className}`}>
+    <div className={`glass dark:bg-navy-900/90 rounded-2xl shadow-xl border border-navy-100 dark:border-navy-700 ${paddingClasses[padding]} ${className}`}>
       {children}
     </div>
   );
-}
+});
 
 
 
