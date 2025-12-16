@@ -3,6 +3,7 @@
 import type { SortField, SortOrder, ViewMode, ScoreFilter, RepoGroup } from './types';
 import { HistoryFilters } from './HistoryFilters';
 import type { EvaluationSummary } from '@/types';
+import { ClockIcon, StackIcon, ListIcon, ChartBarIcon, RefreshIcon } from '@/components/ui';
 
 interface HistoryHeaderProps {
   viewMode: ViewMode;
@@ -44,9 +45,7 @@ export function HistoryHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-navy-100 dark:bg-navy-700">
-            <svg className="w-4 h-4 text-navy-600 dark:text-navy-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <ClockIcon className="w-4 h-4 text-navy-600 dark:text-navy-300" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-navy-900 dark:text-white">Evaluation History</h3>
@@ -69,14 +68,7 @@ export function HistoryHeader({
               }`}
               title="Group by repo"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
-              </svg>
+              <StackIcon className="w-3.5 h-3.5" />
               Grouped
             </button>
             <button
@@ -88,9 +80,7 @@ export function HistoryHeader({
               }`}
               title="Flat list"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
+              <ListIcon className="w-3.5 h-3.5" />
               List
             </button>
           </div>
@@ -103,28 +93,14 @@ export function HistoryHeader({
             }`}
             title="Toggle statistics"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
+            <ChartBarIcon className="w-5 h-5" />
           </button>
           <button
             onClick={onRefresh}
             className="p-2 text-navy-400 hover:text-navy-600 dark:hover:text-navy-300 hover:bg-navy-100 dark:hover:bg-navy-700 rounded-lg transition"
             title="Refresh"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
+            <RefreshIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
