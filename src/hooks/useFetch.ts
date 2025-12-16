@@ -1,6 +1,67 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '@/lib/api';
 
+// Request deduplication - prevents duplicate concurrent requests
+const inflightRequests = new Map<string, Promise<Response>>();
+
+async function deduplicatedFetch(url: string, options?: RequestInit): Promise<Response> {
+  const key = `${options?.method || 'GET'}:${url}`;
+  
+  // If there's already a request in flight, return it
+  const existing = inflightRequests.get(key);
+  if (existing) {
+    return existing.then(res => res.clone());
+  }
+  
+  // Start new request
+  const promise = fetch(url, options);
+  inflightRequests.set(key, promise);
+  
+  try {
+    const response = await promise;
+    return response;
+  } finally {
+    // Clean up after request completes
+    inflightRequests.delete(key);
+  }
+}
+
+// Retry with exponential backoff for transient errors
+async function fetchWithRetry(
+  url: string,
+  options?: RequestInit,
+  maxRetries = 2,
+  baseDelay = 1000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await deduplicatedFetch(url, options);
+      
+      // Only retry on server errors (5xx), not client errors (4xx)
+      if (response.status >= 500 && attempt < maxRetries) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      return response;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error('Unknown error');
+      
+      // Don't retry on abort
+      if (lastError.name === 'AbortError') throw lastError;
+      
+      // Wait before retry (exponential backoff)
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 interface FetchState<T> {
   data: T | null;
   error: string | null;
@@ -44,7 +105,7 @@ export function useFetch<T>(
 
     try {
       const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         signal: abortControllerRef.current.signal,
         headers: { 'Content-Type': 'application/json' },
       });
