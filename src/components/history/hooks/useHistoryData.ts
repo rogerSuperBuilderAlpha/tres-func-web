@@ -5,11 +5,12 @@ import type { EvaluationSummary, CostAggregation } from '@/types';
 import type { ScoreFilter, SortField, SortOrder, ViewMode, RepoGroup } from '../types';
 import { compareEvaluations, compareRepoGroups, filterEvaluations, groupEvaluationsByRepo } from '../utils';
 
-// Simple cache for evaluations list (shared across all instances)
+// Stale-while-revalidate cache for evaluations list
 const evaluationsCache = {
   data: null as { evaluations: EvaluationSummary[]; costAggregation?: CostAggregation } | null,
   timestamp: 0,
-  TTL: 30000, // 30 second cache
+  FRESH_TTL: 10000,  // Data considered fresh for 10s (no refetch)
+  STALE_TTL: 60000,  // Data usable for 60s (show stale, refetch in background)
 };
 
 interface UseHistoryDataOptions {
@@ -66,16 +67,29 @@ export function useHistoryData({ apiBase }: UseHistoryDataOptions): UseHistoryDa
   const isMountedRef = useRef(true);
 
   const fetchEvaluations = useCallback(async (forceRefresh = false) => {
-    // Check cache first (unless force refresh)
     const now = Date.now();
-    if (!forceRefresh && evaluationsCache.data && now - evaluationsCache.timestamp < evaluationsCache.TTL) {
-      setEvaluations(evaluationsCache.data.evaluations);
-      setCostAggregation(evaluationsCache.data.costAggregation);
+    const cacheAge = now - evaluationsCache.timestamp;
+    const hasFreshCache = evaluationsCache.data && cacheAge < evaluationsCache.FRESH_TTL;
+    const hasStaleCache = evaluationsCache.data && cacheAge < evaluationsCache.STALE_TTL;
+
+    // If cache is fresh and not forcing refresh, use cached data
+    if (!forceRefresh && hasFreshCache) {
+      setEvaluations(evaluationsCache.data!.evaluations);
+      setCostAggregation(evaluationsCache.data!.costAggregation);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Stale-while-revalidate: show stale data immediately, refetch in background
+    if (!forceRefresh && hasStaleCache) {
+      setEvaluations(evaluationsCache.data!.evaluations);
+      setCostAggregation(evaluationsCache.data!.costAggregation);
+      setLoading(false);
+      // Continue to fetch fresh data in background (don't return)
+    } else {
+      setLoading(true);
+    }
+
     setError(null);
     try {
       const response = await fetch(`${apiBase}/evaluations?limit=50`);
@@ -84,14 +98,15 @@ export function useHistoryData({ apiBase }: UseHistoryDataOptions): UseHistoryDa
       
       // Update cache
       evaluationsCache.data = { evaluations: data.evaluations || [], costAggregation: data.costAggregation };
-      evaluationsCache.timestamp = now;
+      evaluationsCache.timestamp = Date.now();
       
       if (isMountedRef.current) {
         setEvaluations(data.evaluations || []);
         setCostAggregation(data.costAggregation);
       }
     } catch (err) {
-      if (isMountedRef.current) {
+      // Only show error if we don't have any cached data
+      if (isMountedRef.current && !hasStaleCache) {
         setError(err instanceof Error ? err.message : 'Failed to load history');
       }
     } finally {
