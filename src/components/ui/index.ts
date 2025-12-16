@@ -9,6 +9,7 @@ export { SubmitButton } from './SubmitButton';
 export { Modal } from './Modal';
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 export { FormField, TextInput, TextArea, Select, Checkbox, RadioGroup } from './Form';
+export { ToggleGroup } from './ToggleGroup';
 export {
   Skeleton,
   SkeletonText,

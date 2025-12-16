@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
 import { BatchSubmissionForm, type BatchSubmissionResult } from '@/components/BatchSubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
@@ -8,15 +8,18 @@ import { EvaluationReport } from '@/components/EvaluationReport';
 import { EnhancedHistory } from '@/components/EnhancedHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
 import { PageHeader, ErrorBanner, LoadingOverlay } from '@/components/layout';
-import { Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon } from '@/components/ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon, ToggleGroup } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
-import { useEvaluationPolling } from '@/hooks';
+import { useEvaluationPolling, useBatchMutation } from '@/hooks';
+
+const SUBMISSION_MODE_OPTIONS = [
+  { value: 'single' as const, label: 'Single' },
+  { value: 'batch' as const, label: 'Batch' },
+];
 
 export default function Home() {
   const [showManualReview, setShowManualReview] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<'single' | 'batch'>('single');
-  const [batchSubmitting, setBatchSubmitting] = useState(false);
-  const [batchCount, setBatchCount] = useState(0);
   const { addToast } = useToast();
 
   const [
@@ -24,61 +27,37 @@ export default function Home() {
     { handleSubmit, handleSelectEvaluation, handleRetryPdf, handleReset },
   ] = useEvaluationPolling({ apiBase: API_BASE });
 
+  // Batch mutation hook
+  const { isLoading: batchSubmitting, mutateAll } = useBatchMutation<
+    { repoUrl: string; deployedUrl: string },
+    { evaluationId: string }
+  >('/evaluate');
+
   // Wrapper for form submission with proper typing
-  const onSubmit = (
+  const onSubmit = useCallback((
     repoUrl: string,
     deployedUrl: string,
     backendRepoUrl?: string,
     options?: SubmissionOptions
-  ) => handleSubmit(repoUrl, deployedUrl, backendRepoUrl, options as object);
+  ) => handleSubmit(repoUrl, deployedUrl, backendRepoUrl, options as object), [handleSubmit]);
 
-  // Batch submission handler
-  const onBatchSubmit = async (submissions: Array<{ repoUrl: string; deployedUrl: string }>): Promise<BatchSubmissionResult> => {
-    setBatchSubmitting(true);
-    setBatchCount(submissions.length);
+  // Batch submission handler using the hook
+  const onBatchSubmit = useCallback(async (
+    submissions: Array<{ repoUrl: string; deployedUrl: string }>
+  ): Promise<BatchSubmissionResult> => {
+    const { successful, failed } = await mutateAll(submissions);
     
-    try {
-      const results = await Promise.allSettled(
-        submissions.map(async (sub) => {
-          const response = await fetch(`${API_BASE}/evaluate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              repoUrl: sub.repoUrl,
-              deployedUrl: sub.deployedUrl,
-            }),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to start evaluation for ${sub.repoUrl}`);
-          }
-          
-          return response.json();
-        })
+    if (successful > 0) {
+      addToast(
+        `Started ${successful} evaluation${successful !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : ''}. Check History for progress.`,
+        failed > 0 ? 'warning' : 'success'
       );
-      
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
-      
-      if (successful > 0) {
-        addToast(
-          `Started ${successful} evaluation${successful !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : ''}. Check History for progress.`,
-          failed > 0 ? 'warning' : 'success'
-        );
-      } else {
-        addToast('All submissions failed. Please try again.', 'error');
-      }
-      
-      return { successful, failed };
-    } catch (err) {
-      console.error('Batch submission error:', err);
-      addToast('Error submitting batch. Please try again.', 'error');
-      return { successful: 0, failed: submissions.length };
-    } finally {
-      setBatchSubmitting(false);
-      setBatchCount(0);
+    } else {
+      addToast('All submissions failed. Please try again.', 'error');
     }
-  };
+    
+    return { successful, failed };
+  }, [mutateAll, addToast]);
 
   return (
     <main className="h-screen flex flex-col overflow-hidden bg-grid-pattern dark:bg-navy-950">
@@ -121,9 +100,11 @@ export default function Home() {
                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     <div className="lg:col-span-3 space-y-4">
                       {/* Mode Toggle */}
-                      <SubmissionModeToggle 
-                        mode={submissionMode} 
-                        onModeChange={setSubmissionMode} 
+                      <ToggleGroup
+                        value={submissionMode}
+                        onChange={setSubmissionMode}
+                        options={SUBMISSION_MODE_OPTIONS}
+                        disabled={isSubmitting || batchSubmitting}
                       />
 
                       {/* Form */}
@@ -133,7 +114,6 @@ export default function Home() {
                         <BatchSubmissionForm 
                           onSubmitBatch={onBatchSubmit} 
                           isSubmitting={batchSubmitting}
-                          submittingCount={batchCount}
                         />
                       )}
                     </div>
@@ -178,41 +158,5 @@ export default function Home() {
         />
       )}
     </main>
-  );
-}
-
-// Submission Mode Toggle Component
-function SubmissionModeToggle({ 
-  mode, 
-  onModeChange 
-}: { 
-  mode: 'single' | 'batch'; 
-  onModeChange: (mode: 'single' | 'batch') => void;
-}) {
-  return (
-    <div className="flex items-center gap-2 p-1 bg-navy-100 dark:bg-navy-800 rounded-lg w-fit">
-      <button
-        type="button"
-        onClick={() => onModeChange('single')}
-        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-          mode === 'single'
-            ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
-            : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
-        }`}
-      >
-        Single
-      </button>
-      <button
-        type="button"
-        onClick={() => onModeChange('batch')}
-        className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-          mode === 'batch'
-            ? 'bg-white dark:bg-navy-700 text-navy-900 dark:text-white shadow-sm'
-            : 'text-navy-600 dark:text-navy-400 hover:text-navy-900 dark:hover:text-white'
-        }`}
-      >
-        Batch
-      </button>
-    </div>
   );
 }
