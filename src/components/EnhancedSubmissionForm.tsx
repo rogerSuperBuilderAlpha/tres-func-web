@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { isValidRepoUrl, isValidUrl } from '@/lib/utils';
-import { fetchRepoMetadata, checkSiteAccessibility, RepoMetadata, SiteMetadata } from '@/lib/validators';
-import { Spinner } from '@/components/ui';
+import { useState } from 'react';
+import { SubmitButton, PlusIcon } from '@/components/ui';
 import { RepoPreview } from './RepoPreview';
 import { SitePreview } from './SitePreview';
 import { PreflightSummary } from './PreflightSummary';
 import { AdvancedOptions } from './submission/AdvancedOptions';
-import { ValidatedUrlInput, type ValidationState } from './submission/ValidatedUrlInput';
-import { useDebouncedEffect } from '@/hooks';
+import { ValidatedUrlInput } from './submission/ValidatedUrlInput';
+import { useRepoValidation, useSiteValidation } from '@/hooks';
 
 interface EnhancedSubmissionFormProps {
   onSubmit: (repoUrl: string, deployedUrl: string, backendRepoUrl?: string, options?: SubmissionOptions) => void;
@@ -28,79 +26,11 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
   const [deployedUrl, setDeployedUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [focusMode, setFocusMode] = useState<SubmissionOptions['focusMode']>('balanced');
-  
-  // Validation states
-  const [repoValidation, setRepoValidation] = useState<ValidationState>({ checking: false, valid: false });
-  const [backendValidation, setBackendValidation] = useState<ValidationState>({ checking: false, valid: true });
-  const [siteValidation, setSiteValidation] = useState<ValidationState>({ checking: false, valid: false });
-  
-  // Metadata
-  const [repoMetadata, setRepoMetadata] = useState<RepoMetadata | null>(null);
-  const [backendMetadata, setBackendMetadata] = useState<RepoMetadata | null>(null);
-  const [siteMetadata, setSiteMetadata] = useState<SiteMetadata | null>(null);
 
-  // Debounced validation for repo URL
-  const validateRepo = useCallback(async (url: string, isBackend = false) => {
-    const setState = isBackend ? setBackendValidation : setRepoValidation;
-    const setMeta = isBackend ? setBackendMetadata : setRepoMetadata;
-
-    if (!url) {
-      setState({ checking: false, valid: isBackend }); // Backend is optional
-      setMeta(null);
-      return;
-    }
-
-    if (!isValidRepoUrl(url)) {
-      setState({ checking: false, valid: false, error: 'Invalid GitHub URL' });
-      setMeta(null);
-      return;
-    }
-
-    setState({ checking: true, valid: false });
-
-    const metadata = await fetchRepoMetadata(url);
-    if (metadata) {
-      if (metadata.isPrivate) {
-        setState({ checking: false, valid: false, error: 'Repository is private' });
-      } else {
-        setState({ checking: false, valid: true });
-      }
-      setMeta(metadata);
-    } else {
-      setState({ checking: false, valid: false, error: 'Repository not found' });
-      setMeta(null);
-    }
-  }, []);
-
-  // Debounced validation for site URL
-  const validateSite = useCallback(async (url: string) => {
-    if (!url) {
-      setSiteValidation({ checking: false, valid: false });
-      setSiteMetadata(null);
-      return;
-    }
-
-    if (!isValidUrl(url)) {
-      setSiteValidation({ checking: false, valid: false, error: 'Invalid URL' });
-      setSiteMetadata(null);
-      return;
-    }
-
-    setSiteValidation({ checking: true, valid: false });
-
-    const metadata = await checkSiteAccessibility(url);
-    setSiteMetadata(metadata);
-    setSiteValidation({
-      checking: false,
-      valid: metadata.accessible,
-      error: metadata.accessible ? undefined : 'Site unreachable',
-    });
-  }, []);
-
-  // Validate on URL changes with debounce
-  useDebouncedEffect(() => void validateRepo(repoUrl), [repoUrl, validateRepo], 500);
-  useDebouncedEffect(() => void validateRepo(backendRepoUrl, true), [backendRepoUrl, validateRepo], 500);
-  useDebouncedEffect(() => void validateSite(deployedUrl), [deployedUrl, validateSite], 500);
+  // Use extracted validation hooks
+  const { validation: repoValidation, metadata: repoMetadata } = useRepoValidation(repoUrl);
+  const { validation: backendValidation, metadata: backendMetadata } = useRepoValidation(backendRepoUrl, { optional: true });
+  const { validation: siteValidation, metadata: siteMetadata } = useSiteValidation(deployedUrl);
 
   const canSubmit =
     repoValidation.valid &&
@@ -125,16 +55,13 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-lg">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <PlusIcon className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-navy-900 dark:text-white">New Evaluation</h2>
               <p className="text-xs text-navy-500 dark:text-navy-400">Enter submission details</p>
             </div>
           </div>
-          
         </div>
 
         <div className="space-y-4">
@@ -181,29 +108,15 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
         />
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className={`w-full mt-5 py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 ${
-            canSubmit
-              ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-white hover:from-gold-400 hover:to-gold-500 shadow-lg shadow-gold-500/25 hover:shadow-xl hover:shadow-gold-500/30 hover:-translate-y-0.5'
-              : 'bg-navy-200 dark:bg-navy-700 text-navy-400 dark:text-navy-500 cursor-not-allowed'
-          }`}
-        >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center">
-              <Spinner size="sm" className="mr-2 text-white" />
-              Starting Evaluation...
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Start Evaluation
-            </span>
-          )}
-        </button>
+        <div className="mt-5">
+          <SubmitButton
+            disabled={!canSubmit}
+            isSubmitting={isSubmitting}
+            submittingText="Starting Evaluation..."
+          >
+            Start Evaluation
+          </SubmitButton>
+        </div>
       </div>
 
       {/* Preview Cards */}

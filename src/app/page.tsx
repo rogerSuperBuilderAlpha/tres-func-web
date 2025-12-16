@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { EnhancedSubmissionForm, SubmissionOptions } from '@/components/EnhancedSubmissionForm';
-import { BatchSubmissionForm } from '@/components/BatchSubmissionForm';
+import { BatchSubmissionForm, type BatchSubmissionResult } from '@/components/BatchSubmissionForm';
 import { EvaluationStatus } from '@/components/EvaluationStatus';
 import { EvaluationReport, PdfStatusButton } from '@/components/EvaluationReport';
 import { EnhancedHistory } from '@/components/EnhancedHistory';
 import { ManualReviewModal } from '@/components/ManualReviewModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
+import { Spinner, Tabs, TabsList, TabsTrigger, TabsContent, useToast, PlusIcon, ClockIcon, CheckCircleIcon, ClipboardCheckIcon } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import { useEvaluationPolling } from '@/hooks';
 
@@ -17,6 +17,7 @@ export default function Home() {
   const [submissionMode, setSubmissionMode] = useState<'single' | 'batch'>('single');
   const [batchSubmitting, setBatchSubmitting] = useState(false);
   const [batchCount, setBatchCount] = useState(0);
+  const { addToast } = useToast();
 
   const [
     { evaluation, error, isSubmitting, isLoadingHistory },
@@ -32,7 +33,7 @@ export default function Home() {
   ) => handleSubmit(repoUrl, deployedUrl, backendRepoUrl, options as object);
 
   // Batch submission handler
-  const onBatchSubmit = async (submissions: Array<{ repoUrl: string; deployedUrl: string }>) => {
+  const onBatchSubmit = async (submissions: Array<{ repoUrl: string; deployedUrl: string }>): Promise<BatchSubmissionResult> => {
     setBatchSubmitting(true);
     setBatchCount(submissions.length);
     
@@ -60,15 +61,21 @@ export default function Home() {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
       
-      // Show success message and switch to history view
+      // Show toast notification
       if (successful > 0) {
-        alert(`Started ${successful} evaluation${successful !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : '.'} Check History for progress.`);
+        addToast(
+          `Started ${successful} evaluation${successful !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : ''}. Check History for progress.`,
+          failed > 0 ? 'warning' : 'success'
+        );
       } else {
-        alert('All submissions failed. Please try again.');
+        addToast('All submissions failed. Please try again.', 'error');
       }
+      
+      return { successful, failed };
     } catch (err) {
       console.error('Batch submission error:', err);
-      alert('Error submitting batch. Please try again.');
+      addToast('Error submitting batch. Please try again.', 'error');
+      return { successful: 0, failed: submissions.length };
     } finally {
       setBatchSubmitting(false);
       setBatchCount(0);
@@ -83,9 +90,7 @@ export default function Home() {
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-navy-700 to-navy-900 shadow-lg">
-                <svg className="w-5 h-5 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <CheckCircleIcon className="w-5 h-5 text-gold-400" />
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-navy-900 dark:text-white tracking-tight">TTB Evaluator</h1>
@@ -104,9 +109,7 @@ export default function Home() {
                     onClick={() => setShowManualReview(true)}
                     className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gold-500 text-white rounded-lg hover:bg-gold-600 transition text-sm font-medium shadow-md"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
+                    <ClipboardCheckIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Manual Review</span>
                   </button>
                   
@@ -169,24 +172,10 @@ export default function Home() {
             <div className="max-w-6xl mx-auto">
               <Tabs defaultValue="new" className="h-full">
                 <TabsList className="mb-6 inline-flex">
-                  <TabsTrigger
-                    value="new"
-                    icon={
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                    }
-                  >
+                  <TabsTrigger value="new" icon={<PlusIcon className="w-4 h-4" />}>
                     New Submission
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="history"
-                    icon={
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    }
-                  >
+                  <TabsTrigger value="history" icon={<ClockIcon className="w-4 h-4" />}>
                     History
                   </TabsTrigger>
                 </TabsList>
