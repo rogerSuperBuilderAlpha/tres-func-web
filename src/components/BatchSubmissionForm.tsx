@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useId } from 'react';
+import { useState, useCallback, useId, memo } from 'react';
 import { SubmitButton, PlusIcon, StackIcon } from '@/components/ui';
 import { SubmissionCard, type SubmissionEntry } from './submission/SubmissionCard';
 import { type ValidationState } from './submission/ValidatedUrlInput';
@@ -31,7 +31,7 @@ function createEmptyEntry(id: string): SubmissionEntry {
   };
 }
 
-export function BatchSubmissionForm({ onSubmitBatch, isSubmitting, submittingCount = 0 }: BatchSubmissionFormProps) {
+export const BatchSubmissionForm = memo(function BatchSubmissionForm({ onSubmitBatch, isSubmitting, submittingCount = 0 }: BatchSubmissionFormProps) {
   const baseId = useId();
   const [entries, setEntries] = useState<SubmissionEntry[]>([
     createEmptyEntry(`${baseId}-0`),
@@ -124,4 +124,4 @@ export function BatchSubmissionForm({ onSubmitBatch, isSubmitting, submittingCou
       )}
     </form>
   );
-}
+});

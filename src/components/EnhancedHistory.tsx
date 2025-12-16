@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { DashboardStats } from './DashboardStats';
 import { AnalyticsPortal } from './analytics';
 import {
@@ -19,7 +19,7 @@ interface EnhancedHistoryProps {
   showStats?: boolean;
 }
 
-export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showStatsProp = true }: EnhancedHistoryProps) {
+export const EnhancedHistory = memo(function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showStatsProp = true }: EnhancedHistoryProps) {
   const [showStats, setShowStats] = useState(showStatsProp);
   const [showAnalytics, setShowAnalytics] = useState(false);
 
@@ -123,4 +123,4 @@ export function EnhancedHistory({ apiBase, onSelectEvaluation, showStats: showSt
       </div>
     </div>
   );
-}
+});

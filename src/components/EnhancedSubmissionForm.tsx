@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { SubmitButton, PlusIcon } from '@/components/ui';
 import { RepoPreview } from './RepoPreview';
 import { SitePreview } from './SitePreview';
@@ -20,7 +20,7 @@ export interface SubmissionOptions {
   notes?: string;
 }
 
-export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmissionFormProps) {
+export const EnhancedSubmissionForm = memo(function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmissionFormProps) {
   const [repoUrl, setRepoUrl] = useState('');
   const [backendRepoUrl, setBackendRepoUrl] = useState('');
   const [deployedUrl, setDeployedUrl] = useState('');
@@ -136,4 +136,4 @@ export function EnhancedSubmissionForm({ onSubmit, isSubmitting }: EnhancedSubmi
       />
     </form>
   );
-}
+});

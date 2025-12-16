@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import type { EvaluationReportData, ManualReview } from '@/types';
 import { getScoreTierGradient } from '@/lib/utils';
 import {
@@ -24,7 +24,7 @@ interface EvaluationReportProps {
 // Backward-compatible re-export (used by app page)
 export { PdfStatusButton } from './report/PdfStatusButton';
 
-export function EvaluationReport({ report, manualReviews = [] }: EvaluationReportProps) {
+export const EvaluationReport = memo(function EvaluationReport({ report, manualReviews = [] }: EvaluationReportProps) {
   const [selectedReview, setSelectedReview] = useState<ManualReview | null>(null);
 
   const { criticalIssues, strengths, concerns, recommendations, overallScore, maxScore, scoreTier } = useMemo(() => {
@@ -95,4 +95,4 @@ export function EvaluationReport({ report, manualReviews = [] }: EvaluationRepor
       </div>
     </div>
   );
-}
+});

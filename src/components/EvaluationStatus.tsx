@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState, memo } from 'react';
 import type { TestProgress, DetailedProgress } from '@/types';
 import { TIME_THRESHOLDS } from '@/lib/constants';
 import { ActivityLog, getStatusLevelStyles, TEST_STATUS_CONFIG, TestStatusChecklist, TimerPanel, type StatusLevel } from './status';
@@ -17,7 +17,7 @@ interface EvaluationStatusProps {
   deployedUrl?: string;
 }
 
-export function EvaluationStatus({ evaluationId, progress, startTime, detailedProgress, repoUrl, deployedUrl }: EvaluationStatusProps) {
+export const EvaluationStatus = memo(function EvaluationStatus({ evaluationId, progress, startTime, detailedProgress, repoUrl, deployedUrl }: EvaluationStatusProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [lastChangeTime, setLastChangeTime] = useState(Date.now());
   const lastProgressSerializedRef = useRef<string | undefined>(undefined);
@@ -132,4 +132,4 @@ export function EvaluationStatus({ evaluationId, progress, startTime, detailedPr
       </div>
     </div>
   );
-}
+});

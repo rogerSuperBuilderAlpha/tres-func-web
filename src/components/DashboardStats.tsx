@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import { StatCard, CostsSummary, ScoreDistribution, calculateStats } from './stats';
 import { ChartBarIcon, DocumentIcon, PieChartFullIcon, BadgeCheckIcon, WarningIcon } from '@/components/ui';
@@ -11,7 +11,7 @@ interface DashboardStatsProps {
   onOpenAnalytics?: () => void;
 }
 
-export function DashboardStats({ evaluations, costAggregation, onOpenAnalytics }: DashboardStatsProps) {
+export const DashboardStats = memo(function DashboardStats({ evaluations, costAggregation, onOpenAnalytics }: DashboardStatsProps) {
   const stats = useMemo(() => calculateStats(evaluations), [evaluations]);
 
   return (
@@ -79,4 +79,4 @@ export function DashboardStats({ evaluations, costAggregation, onOpenAnalytics }
       />
     </div>
   );
-}
+});
