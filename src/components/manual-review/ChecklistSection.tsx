@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { CHECKLIST_ITEMS } from './config';
 
 export interface ChecklistItem {
@@ -18,7 +18,7 @@ export function createInitialChecklist(): ChecklistItem[] {
   return CHECKLIST_ITEMS.map((item) => ({ ...item, checked: false }));
 }
 
-export function ChecklistSection({ checklist, onToggle }: ChecklistSectionProps) {
+export const ChecklistSection = memo(function ChecklistSection({ checklist, onToggle }: ChecklistSectionProps) {
   const completedCount = useMemo(() => checklist.filter((item) => item.checked).length, [checklist]);
 
   return (
@@ -47,7 +47,7 @@ export function ChecklistSection({ checklist, onToggle }: ChecklistSectionProps)
       </div>
     </div>
   );
-}
+});
 
 
 

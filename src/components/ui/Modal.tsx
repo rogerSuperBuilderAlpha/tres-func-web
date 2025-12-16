@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, type ReactNode, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useCallback, memo, type ReactNode, type KeyboardEvent } from 'react';
 import { XIcon } from './Icons';
 
 interface ModalProps {
@@ -29,7 +29,7 @@ const sizeClasses = {
  * - Click outside to close
  * - Proper ARIA attributes
  */
-export function Modal({
+export const Modal = memo(function Modal({
   isOpen,
   onClose,
   title,
@@ -175,4 +175,4 @@ export function Modal({
       </div>
     </div>
   );
-}
+});

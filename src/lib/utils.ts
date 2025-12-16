@@ -8,25 +8,11 @@ import { SCORE_THRESHOLDS } from './constants';
 // Validation
 // ============================================
 
-export function isValidGitHubUrl(url: string): boolean {
-  return /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+\/?$/.test(url);
-}
-
-export function isValidGitLabUrl(url: string): boolean {
-  // Supports gitlab.com and self-hosted GitLab instances
-  return /^https?:\/\/(www\.)?(gitlab\.com|gitlab\.[a-z]+(\.[a-z]+)?)(\/[\w.-]+){2,}\/?$/.test(url);
-}
+const GITHUB_REPO_REGEX = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+\/?$/;
+const GITLAB_REPO_REGEX = /^https?:\/\/(www\.)?(gitlab\.com|gitlab\.[a-z]+(\.[a-z]+)?)(\/[\w.-]+){2,}\/?$/;
 
 export function isValidRepoUrl(url: string): boolean {
-  return isValidGitHubUrl(url) || isValidGitLabUrl(url);
-}
-
-export type RepoProvider = 'github' | 'gitlab';
-
-export function getRepoProvider(url: string): RepoProvider | null {
-  if (isValidGitHubUrl(url)) return 'github';
-  if (isValidGitLabUrl(url)) return 'gitlab';
-  return null;
+  return GITHUB_REPO_REGEX.test(url) || GITLAB_REPO_REGEX.test(url);
 }
 
 export function isValidUrl(url: string): boolean {

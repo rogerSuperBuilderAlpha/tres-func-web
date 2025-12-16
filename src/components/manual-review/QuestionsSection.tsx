@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { REVIEW_QUESTIONS } from './config';
 
 interface QuestionsSectionProps {
@@ -7,7 +8,7 @@ interface QuestionsSectionProps {
   onChange: (id: string, value: string) => void;
 }
 
-export function QuestionsSection({ answers, onChange }: QuestionsSectionProps) {
+export const QuestionsSection = memo(function QuestionsSection({ answers, onChange }: QuestionsSectionProps) {
   return (
     <div className="space-y-4">
       <h3 className="font-semibold text-navy-900">Review Questions</h3>
@@ -25,7 +26,7 @@ export function QuestionsSection({ answers, onChange }: QuestionsSectionProps) {
       ))}
     </div>
   );
-}
+});
 
 
 
