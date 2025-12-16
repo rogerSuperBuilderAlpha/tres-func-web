@@ -49,6 +49,7 @@ export const EnhancedHistory = memo(function EnhancedHistory({ apiBase, onSelect
     expandedRepos,
     toggleRepoExpanded,
     fetchEvaluations,
+    refreshEvaluations,
   } = useHistoryData({ apiBase });
 
   if (loading) {
@@ -83,7 +84,7 @@ export const EnhancedHistory = memo(function EnhancedHistory({ apiBase, onSelect
           onViewModeChange={setViewMode}
           showStats={showStats}
           onToggleStats={() => setShowStats(!showStats)}
-          onRefresh={fetchEvaluations}
+          onRefresh={refreshEvaluations}
           groupedByRepo={groupedByRepo}
           filteredEvaluations={filteredEvaluations}
           evaluations={evaluations}

@@ -1,9 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { EvaluationSummary, CostAggregation } from '@/types';
 import type { ScoreFilter, SortField, SortOrder, ViewMode, RepoGroup } from '../types';
 import { compareEvaluations, compareRepoGroups, filterEvaluations, groupEvaluationsByRepo } from '../utils';
+
+// Simple cache for evaluations list (shared across all instances)
+const evaluationsCache = {
+  data: null as { evaluations: EvaluationSummary[]; costAggregation?: CostAggregation } | null,
+  timestamp: 0,
+  TTL: 30000, // 30 second cache
+};
 
 interface UseHistoryDataOptions {
   apiBase: string;
@@ -39,6 +46,7 @@ interface UseHistoryDataReturn {
   
   // Actions
   fetchEvaluations: () => Promise<void>;
+  refreshEvaluations: () => Promise<void>;
 }
 
 export function useHistoryData({ apiBase }: UseHistoryDataOptions): UseHistoryDataReturn {
@@ -55,24 +63,48 @@ export function useHistoryData({ apiBase }: UseHistoryDataOptions): UseHistoryDa
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [expandedRepos, setExpandedRepos] = useState<Set<string>>(new Set());
 
-  const fetchEvaluations = useCallback(async () => {
+  const isMountedRef = useRef(true);
+
+  const fetchEvaluations = useCallback(async (forceRefresh = false) => {
+    // Check cache first (unless force refresh)
+    const now = Date.now();
+    if (!forceRefresh && evaluationsCache.data && now - evaluationsCache.timestamp < evaluationsCache.TTL) {
+      setEvaluations(evaluationsCache.data.evaluations);
+      setCostAggregation(evaluationsCache.data.costAggregation);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const response = await fetch(`${apiBase}/evaluations?limit=50`);
       if (!response.ok) throw new Error('Failed to fetch evaluations');
       const data = await response.json();
-      setEvaluations(data.evaluations || []);
-      setCostAggregation(data.costAggregation);
+      
+      // Update cache
+      evaluationsCache.data = { evaluations: data.evaluations || [], costAggregation: data.costAggregation };
+      evaluationsCache.timestamp = now;
+      
+      if (isMountedRef.current) {
+        setEvaluations(data.evaluations || []);
+        setCostAggregation(data.costAggregation);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load history');
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to load history');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [apiBase]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchEvaluations();
+    return () => { isMountedRef.current = false; };
   }, [fetchEvaluations]);
 
   // Filter evaluations
@@ -123,5 +155,6 @@ export function useHistoryData({ apiBase }: UseHistoryDataOptions): UseHistoryDa
     expandedRepos,
     toggleRepoExpanded,
     fetchEvaluations,
+    refreshEvaluations: () => fetchEvaluations(true),
   };
 }
