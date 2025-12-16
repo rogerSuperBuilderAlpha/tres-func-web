@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { getScoreColor, getGradeLabel } from '@/lib/utils';
+import { getScoreColor, getScoreHex, getGradeLabel } from '@/lib/utils';
 
 interface RubricInfo {
   label: string;
@@ -37,7 +37,7 @@ export const ScoreCard = memo(function ScoreCard({ value, rubricInfo, assessment
           style={{ 
             width: `${percentage}%`,
             minWidth: percentage > 0 ? '8px' : '0',
-            backgroundColor: percentage >= 80 ? '#10b981' : percentage >= 60 ? '#f59e0b' : '#ef4444'
+            backgroundColor: getScoreHex(safeValue, rubricInfo.max),
           }} 
         />
       </div>
