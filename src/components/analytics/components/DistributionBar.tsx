@@ -24,3 +24,4 @@ export const DistributionBar = memo(function DistributionBar({ label, count, tot
     </div>
   );
 });
+

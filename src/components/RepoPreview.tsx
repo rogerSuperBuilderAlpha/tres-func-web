@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
+import Image from 'next/image';
 import { RepoMetadata } from '@/lib/validators';
 import { Badge, StarIcon, ForkIcon } from '@/components/ui';
 import { formatRelativeDate } from '@/lib/utils';
@@ -20,9 +21,11 @@ export const RepoPreview = memo(function RepoPreview({ metadata, label }: RepoPr
       )}
       
       <div className="flex items-start gap-3">
-        <img
+        <Image
           src={metadata.owner.avatarUrl}
           alt={metadata.owner.login}
+          width={40}
+          height={40}
           className="w-10 h-10 rounded-lg border border-navy-200"
         />
         
@@ -76,5 +79,6 @@ export const RepoPreview = memo(function RepoPreview({ metadata, label }: RepoPr
     </div>
   );
 });
+
 
 

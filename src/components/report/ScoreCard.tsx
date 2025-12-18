@@ -21,17 +21,17 @@ export const ScoreCard = memo(function ScoreCard({ value, rubricInfo, assessment
   const grade = getGradeLabel(percentage);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 border border-navy-100 hover:shadow-md transition">
+    <div className="bg-white dark:bg-navy-800 rounded-xl shadow-sm p-5 border border-navy-100 dark:border-navy-700 hover:shadow-md transition">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-xl">{rubricInfo.icon}</span>
-          <span className="font-semibold text-navy-800">{rubricInfo.label}</span>
+          <span className="font-semibold text-navy-800 dark:text-white">{rubricInfo.label}</span>
         </div>
         <span className={`text-2xl font-bold font-mono ${getScoreColor(safeValue, rubricInfo.max)}`}>
           {safeValue}<span className="text-sm text-navy-400">/{rubricInfo.max}</span>
         </span>
       </div>
-      <div className="h-3 bg-navy-100 rounded-full mb-4 overflow-hidden relative">
+      <div className="h-3 bg-navy-100 dark:bg-navy-700 rounded-full mb-4 overflow-hidden relative">
         <div 
           className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out"
           style={{ 
@@ -44,7 +44,7 @@ export const ScoreCard = memo(function ScoreCard({ value, rubricInfo, assessment
       <div className="flex items-center justify-between">
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${grade.color}`}>{grade.label}</span>
       </div>
-      <p className="text-sm text-navy-600 leading-relaxed mt-3">{assessment}</p>
+      <p className="text-sm text-navy-600 dark:text-navy-300 leading-relaxed mt-3">{assessment}</p>
     </div>
   );
 });

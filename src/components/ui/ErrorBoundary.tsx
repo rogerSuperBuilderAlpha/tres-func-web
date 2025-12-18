@@ -94,3 +94,4 @@ export function withErrorBoundary<P extends object>(
   WithErrorBoundary.displayName = `WithErrorBoundary(${name || WrappedComponent.displayName || 'Component'})`;
   return WithErrorBoundary;
 }
+

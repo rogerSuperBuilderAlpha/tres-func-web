@@ -115,3 +115,4 @@ export const TimerPanel = memo(function TimerPanel({
     </div>
   );
 });
+

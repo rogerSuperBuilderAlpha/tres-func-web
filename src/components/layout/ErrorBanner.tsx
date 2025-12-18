@@ -29,3 +29,4 @@ export const ErrorBanner = memo(function ErrorBanner({ error, showRetry, onRetry
     </div>
   );
 });
+

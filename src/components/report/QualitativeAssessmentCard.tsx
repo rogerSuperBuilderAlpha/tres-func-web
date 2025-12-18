@@ -65,9 +65,9 @@ export const QualitativeAssessmentCard = memo(function QualitativeAssessmentCard
   negativeLabel = 'Areas of Concern',
 }: QualitativeAssessmentCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 border border-navy-100">
+    <div className="bg-white dark:bg-navy-800 rounded-xl shadow-sm p-5 border border-navy-100 dark:border-navy-700">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="font-semibold text-navy-800 flex items-center gap-2">
+        <h4 className="font-semibold text-navy-800 dark:text-white flex items-center gap-2">
           <span>{icon}</span> {title}
         </h4>
         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getScoreColor(score)}`}>
@@ -75,14 +75,14 @@ export const QualitativeAssessmentCard = memo(function QualitativeAssessmentCard
         </span>
       </div>
       
-      <p className="text-sm text-navy-600 mb-3">{assessment}</p>
+      <p className="text-sm text-navy-600 dark:text-navy-300 mb-3">{assessment}</p>
       
       {positiveItems.length > 0 && (
         <div className="mb-2">
-          <p className="text-xs font-medium text-navy-500 mb-1">{positiveLabel}:</p>
+          <p className="text-xs font-medium text-navy-500 dark:text-navy-400 mb-1">{positiveLabel}:</p>
           <ul className="space-y-1">
             {positiveItems.map((item, i) => (
-              <li key={i} className="text-xs text-success-600 flex items-start gap-1">
+              <li key={i} className="text-xs text-success-600 dark:text-success-500 flex items-start gap-1">
                 <span>✓</span> {item}
               </li>
             ))}
@@ -92,10 +92,10 @@ export const QualitativeAssessmentCard = memo(function QualitativeAssessmentCard
       
       {negativeItems.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-navy-500 mb-1">{negativeLabel}:</p>
+          <p className="text-xs font-medium text-navy-500 dark:text-navy-400 mb-1">{negativeLabel}:</p>
           <ul className="space-y-1">
             {negativeItems.map((item, i) => (
-              <li key={i} className="text-xs text-warning-600 flex items-start gap-1">
+              <li key={i} className="text-xs text-warning-600 dark:text-warning-500 flex items-start gap-1">
                 <span>!</span> {item}
               </li>
             ))}
@@ -105,5 +105,6 @@ export const QualitativeAssessmentCard = memo(function QualitativeAssessmentCard
     </div>
   );
 });
+
 
 

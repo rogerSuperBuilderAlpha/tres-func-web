@@ -192,3 +192,4 @@ export const SubmissionCard = memo(function SubmissionCard({
     </div>
   );
 });
+

@@ -17,3 +17,4 @@ export const LoadingOverlay = memo(function LoadingOverlay({ message = 'Loading.
     </div>
   );
 });
+

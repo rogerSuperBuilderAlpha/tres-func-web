@@ -30,3 +30,4 @@ export const CriticalIssuesCard = memo(function CriticalIssuesCard({ issues }: C
     </div>
   );
 });
+

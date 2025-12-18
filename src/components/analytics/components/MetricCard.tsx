@@ -24,3 +24,4 @@ export const MetricCard = memo(function MetricCard({ label, value, color }: Metr
     </div>
   );
 });
+

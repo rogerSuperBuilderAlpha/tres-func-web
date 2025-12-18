@@ -1,6 +1,35 @@
 /**
- * URL validation utilities with async checks
+ * URL validation utilities
+ *
+ * This module consolidates all URL validation:
+ * - Sync validation (isValidRepoUrl, isValidUrl)
+ * - Async validation (fetchRepoMetadata, checkSiteAccessibility)
+ * - URL parsing utilities (parseGitHubUrl, parseGitLabUrl)
  */
+
+// ============================================
+// Sync Validation (moved from utils.ts)
+// ============================================
+
+const GITHUB_REPO_REGEX = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+\/?$/;
+const GITLAB_REPO_REGEX = /^https?:\/\/(www\.)?(gitlab\.com|gitlab\.[a-z]+(\.[a-z]+)?)(\/[\w.-]+){2,}\/?$/;
+
+export function isValidRepoUrl(url: string): boolean {
+  return GITHUB_REPO_REGEX.test(url) || GITLAB_REPO_REGEX.test(url);
+}
+
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================
+// Types
+// ============================================
 
 export interface ValidationResult {
   valid: boolean;

@@ -430,3 +430,4 @@ export function MoonSolidIcon(props: IconProps) {
     </svg>
   );
 }
+

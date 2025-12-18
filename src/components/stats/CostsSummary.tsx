@@ -45,3 +45,4 @@ const CostItem = memo(function CostItem({
     </div>
   );
 });
+

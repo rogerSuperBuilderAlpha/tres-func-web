@@ -78,11 +78,11 @@ export const EvaluationReport = memo(function EvaluationReport({ report, manualR
       )}
 
       {/* Right Column - Score Breakdown */}
-      <div className="flex-1 flex flex-col bg-navy-50/30 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-navy-50/30 dark:bg-navy-900/30 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 lg:p-8">
           <ManualReviewsSection reviews={manualReviews} onSelect={handleSelectReview} />
 
-          <h2 className="text-xl font-semibold text-navy-900 mb-6">Score Breakdown</h2>
+          <h2 className="text-xl font-semibold text-navy-900 dark:text-white mb-6">Score Breakdown</h2>
 
           <RubricScoreGrid report={report} />
 

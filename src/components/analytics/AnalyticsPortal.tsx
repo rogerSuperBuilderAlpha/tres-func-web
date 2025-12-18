@@ -366,3 +366,4 @@ function TopStrengthsCard({ analytics }: { analytics: NonNullable<ReturnType<typ
     </div>
   );
 }
+

@@ -29,22 +29,22 @@ export const ReviewCard = memo(function ReviewCard({ review, onClick }: ReviewCa
   return (
     <button
       onClick={onClick}
-      className="bg-white rounded-xl border border-navy-200 p-4 text-left hover:shadow-md hover:border-gold-300 transition group"
+      className="bg-white dark:bg-navy-800 rounded-xl border border-navy-200 dark:border-navy-700 p-4 text-left hover:shadow-md hover:border-gold-300 dark:hover:border-gold-600 transition group"
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-navy-800">{review.reviewerName || 'Reviewer'}</span>
+        <span className="text-sm font-semibold text-navy-800 dark:text-white">{review.reviewerName || 'Reviewer'}</span>
         <span className="text-xs text-navy-400">{formatDate(review.reviewedAt).split(',')[0]}</span>
       </div>
-      <p className="text-xs text-navy-600 mb-3 line-clamp-2">{truncated || 'No notes'}</p>
+      <p className="text-xs text-navy-600 dark:text-navy-300 mb-3 line-clamp-2">{truncated || 'No notes'}</p>
       <div className="flex items-center justify-between">
         <div className="flex gap-1 flex-wrap">
           {review.checklist.slice(0, 3).map(id => (
-            <span key={id} className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded">
+            <span key={id} className="text-[10px] bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300 px-1.5 py-0.5 rounded">
               {CHECKLIST_LABELS[id] || id}
             </span>
           ))}
           {review.checklist.length > 3 && (
-            <span className="text-[10px] bg-navy-100 text-navy-600 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] bg-navy-100 dark:bg-navy-700 text-navy-600 dark:text-navy-300 px-1.5 py-0.5 rounded">
               +{review.checklist.length - 3}
             </span>
           )}

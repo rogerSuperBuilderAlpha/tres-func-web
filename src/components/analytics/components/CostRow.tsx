@@ -21,3 +21,4 @@ export const CostRow = memo(function CostRow({ label, value, highlight, bold }: 
     </div>
   );
 });
+

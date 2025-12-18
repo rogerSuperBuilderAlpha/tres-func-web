@@ -21,13 +21,13 @@ export const AccordionItem = memo(function AccordionItem({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-navy-100 last:border-b-0">
+    <div className="border-b border-navy-100 dark:border-navy-700 last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-4 text-left group"
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-navy-700">{title}</span>
+          <span className="text-sm font-semibold text-navy-700 dark:text-navy-200">{title}</span>
           {count !== undefined && count > 0 && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${countColor}`}>
               {count}

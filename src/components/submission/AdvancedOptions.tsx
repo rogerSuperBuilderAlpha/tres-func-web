@@ -74,3 +74,4 @@ export const AdvancedOptions = memo(function AdvancedOptions({ focusMode, onFocu
     </div>
   );
 });
+

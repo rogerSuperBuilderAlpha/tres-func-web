@@ -1,28 +1,16 @@
 /**
  * Shared utility functions for the TTB Evaluator
+ *
+ * Note: URL validation functions have moved to validators.ts
+ * Re-exported here for backwards compatibility.
  */
 import type React from 'react';
 import { SCORE_THRESHOLDS } from './constants';
 
 // ============================================
-// Validation
+// Validation (re-exported from validators.ts)
 // ============================================
-
-const GITHUB_REPO_REGEX = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+\/?$/;
-const GITLAB_REPO_REGEX = /^https?:\/\/(www\.)?(gitlab\.com|gitlab\.[a-z]+(\.[a-z]+)?)(\/[\w.-]+){2,}\/?$/;
-
-export function isValidRepoUrl(url: string): boolean {
-  return GITHUB_REPO_REGEX.test(url) || GITLAB_REPO_REGEX.test(url);
-}
-
-export function isValidUrl(url: string): boolean {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { isValidRepoUrl, isValidUrl } from './validators';
 
 // ============================================
 // Formatting

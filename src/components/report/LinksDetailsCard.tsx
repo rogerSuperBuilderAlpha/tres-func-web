@@ -16,10 +16,10 @@ export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: Links
   );
 
   return (
-    <div className="bg-white rounded-xl border border-navy-200 p-5 mb-6 shadow-sm">
-      <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
-        <span className="w-6 h-6 rounded-full bg-navy-100 flex items-center justify-center">
-          <LinkIcon className="w-3.5 h-3.5 text-navy-600" />
+    <div className="bg-white dark:bg-navy-800 rounded-xl border border-navy-200 dark:border-navy-700 p-5 mb-6 shadow-sm">
+      <h3 className="text-sm font-semibold text-navy-800 dark:text-white mb-3 flex items-center gap-2">
+        <span className="w-6 h-6 rounded-full bg-navy-100 dark:bg-navy-700 flex items-center justify-center">
+          <LinkIcon className="w-3.5 h-3.5 text-navy-600 dark:text-navy-300" />
         </span>
         Links & Details
       </h3>
@@ -31,7 +31,7 @@ export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: Links
             href={report.repoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block"
+            className="text-sm text-navy-700 dark:text-navy-200 hover:text-gold-600 font-medium truncate block"
           >
             {formatRepoDisplayUrl(report.repoUrl)}
           </a>
@@ -43,7 +43,7 @@ export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: Links
             href={report.deployedUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-navy-700 hover:text-gold-600 font-medium truncate block"
+            className="text-sm text-navy-700 dark:text-navy-200 hover:text-gold-600 font-medium truncate block"
           >
             {formatDeployedDisplayUrl(report.deployedUrl)}
           </a>
@@ -51,14 +51,14 @@ export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: Links
 
         <div>
           <p className="text-xs text-navy-400 mb-1">Evaluated</p>
-          <p className="text-sm text-navy-700 font-medium">{evaluatedAtDisplay}</p>
+          <p className="text-sm text-navy-700 dark:text-navy-200 font-medium">{evaluatedAtDisplay}</p>
         </div>
 
         {report.llmCosts && report.llmCosts.totalCostUsd > 0 && (
-          <div className="pt-3 border-t border-navy-100 mt-3">
+          <div className="pt-3 border-t border-navy-100 dark:border-navy-700 mt-3">
             <p className="text-xs text-navy-400 mb-1">LLM Evaluation Cost</p>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-navy-700 font-medium">${report.llmCosts.totalCostUsd.toFixed(4)}</span>
+              <span className="text-sm text-navy-700 dark:text-navy-200 font-medium">${report.llmCosts.totalCostUsd.toFixed(4)}</span>
               <span className="text-xs text-navy-400">
                 ({(report.llmCosts.totalTokens || 0).toLocaleString()} tokens)
               </span>
@@ -69,5 +69,6 @@ export const LinksDetailsCard = memo(function LinksDetailsCard({ report }: Links
     </div>
   );
 });
+
 
 

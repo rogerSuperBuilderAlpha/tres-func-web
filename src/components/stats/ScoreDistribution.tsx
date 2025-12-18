@@ -58,3 +58,4 @@ export const ScoreDistribution = memo(function ScoreDistribution({
     </div>
   );
 });
+
