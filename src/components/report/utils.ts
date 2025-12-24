@@ -1,13 +1,13 @@
 import type { CriticalIssue, EvaluationReportData } from '@/types';
 
-// Rubric configuration
+// Rubric configuration (100-point scale)
 export const RUBRIC_LABELS = {
-  coreFunctionality: { label: 'Core Functionality', max: 20, icon: '⚡' },
-  errorHandling: { label: 'Error Handling', max: 20, icon: '🛡️' },
-  uxAccessibility: { label: 'UX & Accessibility', max: 20, icon: '✨' },
-  codeQuality: { label: 'Code Quality', max: 10, icon: '📐' },
-  security: { label: 'Security', max: 10, icon: '🔒' },
-  deploymentCompliance: { label: 'Deployment', max: 10, icon: '🚀' },
+  coreFunctionality: { label: 'Core Functionality', max: 50, icon: '⚡' },
+  errorHandling: { label: 'Error Handling', max: 15, icon: '🛡️' },
+  uxAccessibility: { label: 'UX & Accessibility', max: 15, icon: '✨' },
+  codeQuality: { label: 'Code Quality', max: 8, icon: '📐' },
+  security: { label: 'Security', max: 7, icon: '🔒' },
+  deploymentCompliance: { label: 'Deployment', max: 5, icon: '🚀' },
 } as const;
 
 export type RubricKey = keyof typeof RUBRIC_LABELS;
@@ -117,7 +117,7 @@ export function getRubricAssessment(report: EvaluationReportData, rubricKey: Rub
   const suites = report.suites as Suites | undefined;
   const rubric = report.scores?.rubric as Record<string, number> | undefined;
   const score = rubric?.[rubricKey] || 0;
-  const maxScoreForKey = RUBRIC_LABELS[rubricKey]?.max || 20;
+  const maxScoreForKey = RUBRIC_LABELS[rubricKey]?.max || 50;
   const percentage = Math.round((score / maxScoreForKey) * 100);
 
   // First, check for overall scoreReasoning (this considers ALL tests including Playwright)

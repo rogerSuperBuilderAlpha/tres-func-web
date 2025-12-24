@@ -4,6 +4,7 @@ export { ReviewCard } from './ReviewCard';
 export { ReviewDetailModal } from './ReviewDetailModal';
 export { PdfStatusButton } from './PdfStatusButton';
 export { ScoreCard } from './ScoreCard';
+export { ScoreBreakdownModal } from './ScoreBreakdownModal';
 export { QualitativeAssessmentCard } from './QualitativeAssessmentCard';
 export { LinksDetailsCard } from './LinksDetailsCard';
 export { AiAssessmentCard } from './AiAssessmentCard';

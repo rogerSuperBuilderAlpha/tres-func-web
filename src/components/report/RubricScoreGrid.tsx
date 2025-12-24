@@ -16,14 +16,16 @@ export const RubricScoreGrid = memo(function RubricScoreGrid({ report }: RubricS
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
       {rubric &&
         Object.entries(rubric).map(([key, value]) => {
-          if (key === 'overall' || !isRubricKey(key)) return null;
+          if (key === 'overall' || key === 'playwrightStats' || key === 'breakdowns' || !isRubricKey(key)) return null;
           const rubricInfo = RUBRIC_LABELS[key];
           return (
             <ScoreCard
               key={key}
-              value={value}
+              value={typeof value === 'number' ? value : 0}
               rubricInfo={rubricInfo}
               assessment={getRubricAssessment(report, key)}
+              categoryKey={key}
+              breakdowns={rubric.breakdowns}
             />
           );
         })}
