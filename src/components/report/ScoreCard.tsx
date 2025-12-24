@@ -58,17 +58,15 @@ export const ScoreCard = memo(function ScoreCard({
         </div>
         <div className="flex items-center justify-between">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${grade.color}`}>{grade.label}</span>
-          {breakdown && (
-            <button
-              onClick={() => setShowBreakdown(true)}
-              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              View Details
-            </button>
-          )}
+          <button
+            onClick={() => setShowBreakdown(true)}
+            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            View Details
+          </button>
         </div>
         <p className="text-sm text-navy-600 dark:text-navy-300 leading-relaxed mt-3">{assessment}</p>
       </div>

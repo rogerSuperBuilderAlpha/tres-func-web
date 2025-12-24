@@ -48,8 +48,18 @@ export const ScoreBreakdownModal = memo(function ScoreBreakdownModal({
   if (!breakdown) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} title={`${icon} ${title} Breakdown`}>
-        <div className="p-6 text-center text-navy-500 dark:text-navy-400">
-          No detailed breakdown available for this category.
+        <div className="p-8 text-center">
+          <div className="text-4xl mb-4">📊</div>
+          <h3 className="text-lg font-semibold text-navy-800 dark:text-white mb-2">
+            Detailed Breakdown Not Available
+          </h3>
+          <p className="text-navy-500 dark:text-navy-400 mb-4">
+            This report was generated before detailed score breakdowns were added.
+          </p>
+          <p className="text-sm text-navy-400 dark:text-navy-500">
+            Run a new evaluation to see detailed breakdowns with Playwright screenshots,
+            specific point allocations, and test-by-test results.
+          </p>
         </div>
       </Modal>
     );
